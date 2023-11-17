@@ -1,10 +1,13 @@
 import pandas as pd
 import copy
 from random import shuffle
+import os
 
-file = open('R101.txt', 'r')
+here = os.path.dirname(os.path.abspath(__file__))
 
-file2 = open('R202.txt', 'r')
+file = open(os.path.join(here, 'R101.txt'), 'r')
+
+file2 = open(os.path.join(here, 'R202.txt'), 'r')
 
 routes = pd.DataFrame(columns=file.readline().split(), data=[ [float(y) for y in x.split()] for x in file.readlines() ])
 
@@ -172,17 +175,17 @@ def route_relocate_operator(r1, r2, data, dist_m, capacity):
             r2.remove(aux_i)
         r1.insert(i, aux_i)
     if best != (0,0):
-        aux_i = r1[i]
+        aux_i = r1[best[0]]
         r1.remove(aux_i)
-        r2.insert(j, aux_i)
+        r2.insert(best[1], aux_i)
 
 def cross_exchange_operator(r1, r2, data, dist_m, capacity):
     min_cost = 100000
     best = (0,0)
     n = len(r1)
     m = len(r2)
-    for i in range(1, n-1):
-        for j in range(1, m-1):
+    for i in range(1, n-2):
+        for j in range(1, m-2):
             r1[i], r2[j] = r2[j], r1[i]
             r1[i+1], r2[j+1] = r2[j+1], r1[i+1]
             feasible, total_cost = validate_feasibility(r1, r2, data, dist_m, capacity)
@@ -192,24 +195,51 @@ def cross_exchange_operator(r1, r2, data, dist_m, capacity):
             r1[i], r2[j] = r2[j], r1[i]
             r1[i+1], r2[j+1] = r2[j+1], r1[i+1]
 
+    if best == (0,0): return
+
     r1[best[0]], r2[best[1]] = r2[best[1]], r1[best[0]]
     r1[best[0]+1], r2[best[1]+1] = r2[best[1]+1], r1[best[0]+1]
 
-
-def iterate_operator(data, distance_matrix, solution, operator, capacity):
-    n = len(solution)
-    min_cost = get_total_cost(distance_matrix, solution)
+def apply_operator(data, distance_matrix, solution, operator, capacity, tabu_list):
+    current_sol = solution
+    n = len(current_sol)
+    min_cost = 100000
     min_sol = []
-    current_sol = copy.deepcopy(solution)
-    for k in range(500):
-        for i in range(n-1):
-            for j in range(i+1, n):
-                operator(current_sol[i], current_sol[j], data, distance_matrix, capacity)
-        current_val = get_total_cost(distance_matrix, current_sol)
-        if current_val < min_cost:
-            min_sol = current_sol.copy()
-            min_cost = current_val
+    for i in range(n-1):
+        for j in range(i+1, n):
+            operator(current_sol[i], current_sol[j], data, distance_matrix, capacity)
+            current_cost = get_total_cost(distance_matrix, current_sol)
+            if current_cost < min_cost and round(current_cost, 7) not in tabu_list:
+                min_cost = current_cost
+                min_sol = copy.deepcopy(current_sol)
+
     return (min_sol, min_cost)
+    
+def iterate_operator(data, distance_matrix, solution, operator, capacity, tabu_list):
+    min_cost = 100000
+    min_sol = solution
+    current_sol = solution
+    current_cost = 0 
+    current_sol, current_cost = apply_operator(data, distance_matrix, current_sol, operator, capacity, tabu_list)
+    if current_cost < min_cost:
+        min_sol = copy.deepcopy(current_sol)
+        min_cost = current_cost
+    return (min_sol, min_cost)
+
+operators = [route_exchange_operator, route_relocate_operator, route_exchange_operator]
+
+def reduce_routes(solution):
+    while len(solution) != 19:
+        for op in operators:
+            print(len(solution))
+            iterate_operator(routes, distance_matrix, solution, op, 200, tabu_list)
+            for k in range(1, len(solution)):
+                route_relocate_operator(solution[0], solution[k], routes, distance_matrix, 200)
+                if(solution[0] == [0,0]):
+                    solution.pop(0)
+                    break
+            
+            solution = list(sorted(solution, key=len))
 
 distance_matrix = make_distance_matrix(routes)
 
@@ -217,15 +247,30 @@ nodes = [ i for i in range(1,len(distance_matrix)) ]
 
 #shuffle(nodes)
 
-solution = get_routes(routes, distance_matrix, nodes, 200)
-#solution = get_routes(routes2, distance_matrix, nodes, 1000)
-print(get_total_cost(distance_matrix, solution))
+solution = sorted(get_routes(routes, distance_matrix, nodes, 200), key=len)
+
+solution = [[0, 92, 42, 15, 87, 57, 43, 13, 58, 0], [0, 59, 2, 21, 73, 41, 56, 74, 0], [0, 45, 98, 16, 85, 96, 60, 89, 0], [0, 83, 82, 7, 8, 46, 17, 93, 0], [0, 63, 30, 51, 9, 20, 32, 0], [0, 65, 71, 81, 50, 1, 70, 0], [0, 39, 23, 67, 55, 4, 25, 0], [0, 28, 12, 76, 78, 3, 68, 0], [0, 72, 40, 53, 26, 24, 77, 0], [0, 33, 29, 79, 34, 35, 0], [0, 62, 11, 90, 66, 80, 0], [0, 36, 47, 19, 49, 48, 0], [0, 14, 44, 38, 91, 100, 0], [0, 27, 52, 84, 97, 0], [0, 5, 61, 86, 37, 0], [0, 31, 88, 10, 0], [0, 95, 99, 94, 0], [0, 75, 22, 54, 0], [0, 69, 18, 6, 0]]
+#solution = list(sorted(solution, key=len))
+best = (copy.deepcopy(solution), get_total_cost(distance_matrix, solution))
+current = best
+print(best[1])
 print()
+tabu_list = [round(best[1],7)]
+ 
+#reduce_routes(solution)
+print(solution)
 
-#print(iterate_operator(routes, distance_matrix, solution, cross_exchange_operator, 200)[1])
-print(iterate_operator(routes, distance_matrix, solution, route_exchange_operator, 200)[1])
-#print(iterate_operator(routes, distance_matrix, solution, route_relocate_operator, 200)[1])
+for i in range(10):
+    solution = list(sorted(solution, key=len, reverse=True))
+    for op in operators:
+        for k in range(2000):
+            current = iterate_operator(routes, distance_matrix, solution, op, 200, tabu_list)
+            if current[1] > 3000:
+                break
+            print(current[1])
+            if current[1] < best[1]:
+                best = current
+            tabu_list.append(round(current[1], 7))
 
-#print(iterate_operator(routes2, distance_matrix, solution, cross_exchange_operator, 1000)[1])
-#print(iterate_operator(routes2, distance_matrix, solution, route_exchange_operator, 1000)[1])
-#print(iterate_operator(routes2, distance_matrix, solution, route_relocate_operator, 1000)[1])
+
+print(best)
