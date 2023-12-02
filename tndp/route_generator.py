@@ -1,8 +1,9 @@
 import math
 import copy
+import time
 from class_objective_function import Tndp
 import heapq as hpq
-
+from drawtest import GraphVisualizer
 
 demand_matrix = [
     [0, 400, 200, 60, 80, 150, 75, 75, 30, 160, 30, 25, 35, 0, 0],
@@ -22,7 +23,7 @@ demand_matrix = [
     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
 ]
 
-
+PENALTY = 10000
 
 def path_to_arcset(path):
     arcs_set=[]
@@ -231,6 +232,8 @@ def exchange_operator(min_val, initial_r, initial_f, tabu_list = set(), min_bus 
                     res = instance.f()
                     val_f = round(res[0]['tv']+res[0]['te']+res[0]['tt'], 5)
                     val_b = res[2]
+                    if(res[3]):
+                        val_f += len(res[3])*PENALTY
                     if val_b < min_bus and (val_f, val_b) not in tabu_list:
                         min_bus = res[2]
                         best_b, best_bf = copy.deepcopy(initial_r), res[1]
@@ -272,9 +275,12 @@ def replace_operator(min_val, initial_r, initial_f, tabu_list = set(), min_bus =
                         del new_sol[r1]
                     res = Tndp(new_sol, initial_f).f()
                     connect_nodes(new_sol, res[3])
+
                     instance = Tndp(new_sol, [10]*len(new_sol))
                     res = instance.f()
                     val_f = round(res[0]['tv']+res[0]['te']+res[0]['tt'], 5)
+                    if(res[3]):
+                        val_f += len(res[3])*PENALTY
                     val_b = res[2]
                     if val_b < min_bus and (val_f, val_b) not in tabu_list:
                         min_bus = res[2]
@@ -326,42 +332,45 @@ def compute():
         process_routes(route_nodes)
         instance = Tndp(route_nodes, [100]*len(route_nodes))
         res = instance.f()
-        if(res[3]):
-            for k,j in res[3]:
-                route_nodes.append(shortest_path(k,j))
+        connect_nodes(route_nodes, res[3])
         instance = Tndp(route_nodes, [100]*len(route_nodes))
         res = instance.f()
         val = res[0]['tv']+res[0]['tt']+res[0]['te']
-        print("actual: ", val)
+        print(route_nodes, res)
         s=0
         b=0
         r1 = route_nodes
         f1 = [100]*len(route_nodes)
+        bests_r[i][0] = (val, copy.deepcopy(r1))
+        bests_r[i][1] = (res[2], copy.deepcopy(r1))
         min_val = 1000000000
         minb = 10000
-        for _ in range(10):
-            # s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, insert_operator, tabu_list)
-            print(s, b)
-            # if(s < min_val):
-            #     min_val = s
-            #     bests_r[i][0] = (min_val, copy.deepcopy(r1))
-            # if(b < minb):
-            #     minb = b
-            #     bests_r[i][1] = (minb, copy.deepcopy(rb1))
-            s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, replace_operator, tabu_list) 
-            if(s < min_val):
-                min_val = s
-                bests_r[i][0] = (min_val, copy.deepcopy(r1))
-            if(b < minb):
-                minb = b
-                bests_r[i][1] = (minb, copy.deepcopy(rb1))
-            s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, exchange_operator, tabu_list) 
-            if(s < min_val):
-                min_val = s
-                bests_r[i][0] = (min_val, copy.deepcopy(r1))
-            if(b < minb):
-                minb = b
-                bests_r[i][1] = (minb, copy.deepcopy(rb1)) 
+        for _ in range(2):
+            try:
+                # s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, insert_operator, tabu_list)
+                # print(s, b)
+                # if(s < min_val):
+                #     min_val = s
+                #     bests_r[i][0] = (min_val, copy.deepcopy(r1))
+                # if(b < minb):
+                #     minb = b
+                #     bests_r[i][1] = (minb, copy.deepcopy(rb1))
+                s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, replace_operator, tabu_list) 
+                if(s < min_val):
+                    min_val = s
+                    bests_r[i][0] = (min_val, copy.deepcopy(r1))
+                if(b < minb):
+                    minb = b
+                    bests_r[i][1] = (minb, copy.deepcopy(rb1))
+                # s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, exchange_operator, tabu_list) 
+                # if(s < min_val):
+                #     min_val = s
+                #     bests_r[i][0] = (min_val, copy.deepcopy(r1))
+                # if(b < minb):
+                #     minb = b
+                #     bests_r[i][1] = (minb, copy.deepcopy(rb1)) 
+            except:
+                continue
     for i in range(len(bests_r)):
         s, r1, f1, b, rb1, rbf1 = 0, bests_r[i][0][1], [10]*len(bests_r[i][0][1]), 1000, bests_r[i][1][1], [10]*len(bests_r[i][1][1])
         s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, demand_operator, tabu_list)
@@ -375,26 +384,28 @@ def compute():
             minb = b
             bests_r[i][1] = (minb, copy.deepcopy(rb1))
             print("mejorado2: ", b)
+    for i in range(len(bests_r)):
+        exploring_route_val = bests_r[i][0][1]
+        instance = Tndp(exploring_route_val, [10]*len(exploring_route_val))
+        pairs = instance.get_max_pair()
+        exploring_route_val.append([pairs[0], pairs[1]])
+        instance = Tndp(exploring_route_val, [10]*len(exploring_route_val))
+        print(i)
+        print(instance.f())
+        print("-------------------------------------")
 
-    print(bests_r)
+    
 compute()
-
-# r1 = [[0, 1, 2, 5, 14, 6, 9, 10, 12, 13], [13, 12, 10, 9, 6, 14, 7, 5, 3, 4, 1], [11, 10, 9, 13, 12], [7, 5, 14, 6, 9, 13, 12, 10, 11, 3, 1], [12, 13, 9, 10, 11, 3, 1, 2, 5, 7, 14, 8], [1, 2, 5, 7, 14, 8], [13, 12, 10, 9, 6, 14, 8], [1, 2, 5, 7, 14, 8], [8, 14, 6, 9], [8, 14, 6, 9, 12, 10], [8, 14, 7, 5, 3, 11], [0, 1, 2, 5, 7, 14, 8], [4, 3, 1, 2, 5, 7, 14, 8], [1, 2, 5, 7, 14, 8], [13, 9, 7, 5, 14, 8], [3, 5, 7, 9], [9, 13]]
-# f1 = [10]*len(r1)
-# res1 = Tndp(r1, f1).f()
-# print(res1)
-# res1[0]['tv']+res1[0]['te']+res1[0]['tt']
-
-
-
-# [(219292.00978597373, 89), (215183.5636249989, 74), 
-#  (212748.69741765823, 90), (213271.7942314248, 90), 
-#  (216238.57834677296, 86), (237504.91556913024, 92), 
-#  (205838.59377182135, 91), (226567.40467775744, 107), 
-#  (225895.70327889553, 94), (232006.79151725463, 106), 
-#  (232408.7944541105, 98), (220114.33709347504, 98), 
-#  (269168.0118528007, 105), (230704.9160720436, 81), 
-#  (210429.67221004327, 84)]
-
-#Generar expresos
-#Ver los nodos que tienen mas transbordos
+# start = time.time()
+# nodes = [[3, 1, 2, 5, 7, 14, 6, 9, 10], [4, 3, 11, 10, 12, 13], [8, 14], [0, 1, 4], [5,7,9]]
+# freqs = [58.48640992998091, 20.4, 6.2, 26.4, 10]
+# sol = Tndp(nodes, freqs)
+# val = sol.f()
+# freqs = val[1]
+# buses = [math.ceil(freqs[i]*sol.get_route_time(i)/30) for i in range(len(freqs))]
+# print(buses)
+# end = time.time()
+# print(end - start)
+# graph_visualizer = GraphVisualizer(network, [(nodes[i], buses[i]) for i in range(len(nodes))], sol.f()[0]['tv']+sol.f()[0]['te']+sol.f()[0]['tt'])
+# graph_visualizer.draw_graph()
+# graph_visualizer.save_plot("instance_graph.png", dpi=600)

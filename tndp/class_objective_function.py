@@ -45,19 +45,11 @@ demand_matrix = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
     ]
 
-def test_demand(route):
-        total_demand = 0
-        for i in range(len(route) - 1):
-            total_demand += demand_matrix[route[i]][route[i+1]]
-        if total_demand == 0:
-            return False
-        return True
-
 class Tndp:
     def __init__(self, route_nodes, route_freq):
-        route_nodes = list(filter(test_demand, route_nodes))
-        if len(route_nodes) != len(route_freq):
-            route_freq = [10]*len(route_nodes)
+        # route_nodes = list(filter(test_demand, route_nodes))
+        # if len(route_nodes) != len(route_freq):
+        #     route_freq = [10]*len(route_nodes)
         self.id = self.get_id(route_nodes)
         self.network = self.sub_graph(route_nodes)
         self.routes = list(map(lambda x: self.path_to_arcset(self.conct(x)), route_nodes))
@@ -68,6 +60,7 @@ class Tndp:
         self.route_freq = route_freq
         self.output_freq = [1]*len(self.route_freq)
         self.route_times = [self.calc_path_time(ri)/2 for ri in self.routes]
+        self.route_max_pair = [(0,0)]*len(self.routes)
 
     
     def get_id(self, route_list):
@@ -78,6 +71,9 @@ class Tndp:
                 generated_id += str(n) + ","
             generated_id += "]"
         return generated_id
+    
+    def get_route_time(self, r):
+        return self.route_times[r]
     def sub_graph(self, route_set):
         _network = [ [] for _ in range(15) ]
         arcs = []
@@ -112,32 +108,13 @@ class Tndp:
             arcs_set.append((path[i], path[i+1]))
         return arcs_set
 
-    def shortest_path(self, s, e):
-        visited = []
-        path_pq = []
-        hpq.heappush(path_pq, (0, [s]))
-        while len(path_pq) > 0:
-            current_element = hpq.heappop(path_pq)
-            current_path = current_element[1]
-            path_end = current_path[len(current_path)-1]
-            if path_end in visited:
-                continue
-            visited.append(path_end)
-            current_cost = current_element[0]
-            for node in self.network[path_end]:
-                aux_path = current_path.copy()
-                aux_path.append(node[0])
-                hpq.heappush(path_pq, (current_cost + node[1], aux_path))
-                if node[0] == e:
-                    return self.path_to_arcset(aux_path)
-        return []
-
     def compute_max_flows(self):
         current_max = 0
         for i in range(len(self.route_max_flows)):
             for pair in self.routes[i]:
                 if self.route_arc_flows[i][pair] > current_max:
                     current_max = self.route_arc_flows[i][pair]
+                    self.route_max_pair[i] = pair
             self.route_max_flows[i] = current_max
             current_max = 0
 
@@ -332,8 +309,8 @@ class Tndp:
         for r in range(len(routes)):
             for pair in routes[r]:
                 self.route_arc_flows[r][pair] = 0
-        for i in range(len(self.network)):
-            for j in range(len(self.network)):
+        for i in range(len(network)):
+            for j in range(len(network)):
                 if demand_matrix[i][j] == 0: continue
                 x = self.is_0_transfer(i,j)
                 y = self.is_1_transfer(i,j)
@@ -374,3 +351,7 @@ class Tndp:
             self.route_freq = output_freq.copy()
 
         return ans, output_freq, buses, unsat
+    def get_max_pair(self):
+        self.evaluate(self.routes, self.route_freq)
+        self.compute_max_flows()
+        return self.route_max_pair[self.route_max_flows.index(max(self.route_max_flows))]
