@@ -204,32 +204,16 @@ class Tndp:
             self.route_arc_flows[r][p] += val
 
     def compute_0_transfer_time(self, i, j, possible_routes, freq):
-        min_time = 1e6
-        filtered_routes = []
         total_freq = 0
         total_time = 0
         total_wait_time = 0
         pi = 0
+        min_time = min(possible_routes, key=lambda x: self.calc_path_time(self.build_path(i, j, self.route_arcs[x])))
+        min_time = self.calc_path_time(self.build_path(i, j, self.route_arcs[min_time]))
+        possible_routes = list(filter(lambda x: self.calc_path_time(self.build_path(i,j,self.route_arcs[x]))/min_time <= ONE_TRANSFER_MAX, possible_routes))
         for r in possible_routes:
             total_freq += freq[r]
         for r in possible_routes:
-            pi = demand_matrix[i][j]*(freq[r]/total_freq)
-            current_path = self.build_path(i,j,self.route_arcs[r])
-            travel_time = self.calc_path_time(current_path)
-            wait_time = 30/total_freq
-            if travel_time + wait_time < min_time:
-                min_time = travel_time + wait_time
-        for r in possible_routes:
-            pi = demand_matrix[i][j]*(freq[r]/total_freq)
-            current_path = self.build_path(i,j,self.route_arcs[r])
-            travel_time = self.calc_path_time(current_path)
-            wait_time = 30/total_freq
-            if travel_time + wait_time <= min_time*ZERO_TRANSFER_MAX:
-                filtered_routes.append(r)
-        total_freq = 0
-        for r in filtered_routes:
-            total_freq += freq[r]
-        for r in filtered_routes:
             pi = demand_matrix[i][j]*(freq[r]/total_freq)
             current_path = self.build_path(i,j,self.route_arcs[r])
             self.update_arc_flows(pi, current_path, r)
@@ -241,7 +225,6 @@ class Tndp:
 
     def compute_1_transfer_time(self, i, j, possible_routes, freq):
         min_time = 1e6
-        filtered_routes = []
         total_freq = 0
         total_time = 0
         total_wait_time = 0
@@ -249,6 +232,9 @@ class Tndp:
         travel_time = 0
         wait_time = 0
         trip_classes = {}
+        min_el = min(possible_routes, key=lambda r: self.calc_path_time(sum(self.build_transfer(i, j, r), [])))
+        min_time = self.calc_path_time(sum(self.build_transfer(i, j, min_el), []))
+        possible_routes = list(filter(lambda x: self.calc_path_time(sum(self.build_transfer(i, j, x), []))/min_time <= ONE_TRANSFER_MAX, possible_routes))
         for p in possible_routes:
             if p[0] not in trip_classes:
                 trip_classes[p[0]] = []
@@ -278,6 +264,11 @@ class Tndp:
         total_wait_time = 0
         total_transfer_time = 0
         trip_classes = {}
+        min_el = min(possible_routes, key=lambda r: self.calc_path_time(sum(self.build_transfer_2(i, j, r), [])))
+        min_time = self.calc_path_time(sum(self.build_transfer_2(i, j, min_el), []))
+        possible_routes = list(filter(
+            lambda x: self.calc_path_time(sum(self.build_transfer_2(i, j, x),[]))/min_time <= TWO_TRANSFER_MAX, possible_routes
+        ))
         for p in possible_routes:
             if p[0] not in trip_classes:
                 trip_classes[p[0]] = []
