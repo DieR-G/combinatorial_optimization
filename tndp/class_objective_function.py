@@ -1,12 +1,10 @@
-import heapq as hpq
-import json
 import math
 from statistics import mean
 
 CAP = 40*1.25
 TRANSFER_TIME = 5
 ZERO_TRANSFER_MAX = 1.5
-ONE_TRANSFER_MAX = 1.2
+ONE_TRANSFER_MAX = 1.1
 TWO_TRANSFER_MAX = 1.1
 
 network = [

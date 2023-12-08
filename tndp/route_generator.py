@@ -54,8 +54,6 @@ network = [
 arcset = [(p[0], v[0]) for p in enumerate(network) for v in p[1]]
 arcset = set([(x,y) for x,y in arcset]+[(y,x) for x,y in arcset]) 
 
-
-
 for i in range(len(network)):
     for j in range(len(network[i])):
         arcs.add((i, network[i][j][0]))
@@ -345,16 +343,16 @@ def compute():
         bests_r[i][1] = (res[2], copy.deepcopy(r1))
         min_val = 1000000000
         minb = 10000
-        for _ in range(2):
+        for _ in range(10):
             try:
-                # s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, insert_operator, tabu_list)
-                # print(s, b)
-                # if(s < min_val):
-                #     min_val = s
-                #     bests_r[i][0] = (min_val, copy.deepcopy(r1))
-                # if(b < minb):
-                #     minb = b
-                #     bests_r[i][1] = (minb, copy.deepcopy(rb1))
+                s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, insert_operator, tabu_list)
+                print(s, b)
+                if(s < min_val):
+                    min_val = s
+                    bests_r[i][0] = (min_val, copy.deepcopy(r1))
+                if(b < minb):
+                    minb = b
+                    bests_r[i][1] = (minb, copy.deepcopy(rb1))
                 s, r1, f1, b, rb1, rbf1 = apply_operator(1e9, r1, f1, replace_operator, tabu_list) 
                 if(s < min_val):
                     min_val = s
@@ -396,6 +394,10 @@ def compute():
 
     
 compute()
+# routes = [[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[12,13,9]]
+# freqs = [68, 20, 16, 5]
+# instance = Tndp(routes, freqs)
+# print(instance.f())
 # start = time.time()
 # nodes = [[3, 1, 2, 5, 7, 14, 6, 9, 10], [4, 3, 11, 10, 12, 13], [8, 14], [0, 1, 4], [5,7,9]]
 # freqs = [58.48640992998091, 20.4, 6.2, 26.4, 10]
