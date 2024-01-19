@@ -1,8 +1,8 @@
 import math
 import copy
 import time
-from class_objective_function import Tndp
 import heapq as hpq
+from class_objective_function import Tndp
 from drawtest import GraphVisualizer
 
 demand_matrix = [
@@ -392,22 +392,23 @@ def compute():
         print(instance.f())
         print("-------------------------------------")
 
-    
-compute()
-# routes = [[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[12,13,9]]
-# freqs = [68, 20, 16, 5]
-# instance = Tndp(routes, freqs)
-# print(instance.f())
-# start = time.time()
-# nodes = [[3, 1, 2, 5, 7, 14, 6, 9, 10], [4, 3, 11, 10, 12, 13], [8, 14], [0, 1, 4], [5,7,9]]
-# freqs = [58.48640992998091, 20.4, 6.2, 26.4, 10]
-# sol = Tndp(nodes, freqs)
-# val = sol.f()
-# freqs = val[1]
-# buses = [math.ceil(freqs[i]*sol.get_route_time(i)/30) for i in range(len(freqs))]
-# print(buses)
-# end = time.time()
-# print(end - start)
-# graph_visualizer = GraphVisualizer(network, [(nodes[i], buses[i]) for i in range(len(nodes))], sol.f()[0]['tv']+sol.f()[0]['te']+sol.f()[0]['tt'])
-# graph_visualizer.draw_graph()
-# graph_visualizer.save_plot("instance_graph.png", dpi=600)
+
+# compute()
+routes = [[0,1,2,5,7,9,10,12],[5,7,9],[4,3,5,7,14,6],[11,3,5,14,8],[12,13,9]]
+freqs = [68, 10, 20, 16, 5]
+instance = Tndp(routes, freqs)
+print(instance.f())
+""" start = time.time()
+nodes = [[3, 1, 2, 5, 7, 14, 6, 9, 10], [4, 3, 11, 10, 12, 13], [8, 14], [0, 1, 4], [5,7,9]]
+freqs = [58.48640992998091, 20.4, 6.2, 26.4, 10]
+sol = Tndp(nodes, freqs)
+val = sol.f()
+freqs = val[1]
+buses = [math.ceil(freqs[i]*sol.get_route_time(i)) for i in range(len(freqs))]
+print(buses)
+end = time.time()
+print(end - start)
+graph_visualizer = GraphVisualizer(network, [(nodes[i], buses[i]) for i in range(len(nodes))], sol.f()[0]['tv']+sol.f()[0]['te']+sol.f()[0]['tt'])
+graph_visualizer.draw_graph()
+graph_visualizer.show_plot()
+graph_visualizer.save_plot("instance_graph.png", dpi=600) """

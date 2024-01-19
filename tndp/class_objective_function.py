@@ -8,9 +8,9 @@ ONE_TRANSFER_MAX = 1.1
 TWO_TRANSFER_MAX = 1.1
 
 network = [
-    [(1, 8)], 
+    [(1, 8)],
     [(2, 2), (3, 3), (4, 6), (0, 8)],
-    [(1, 2), (5, 3)], 
+    [(1, 2), (5, 3)],
     [(1, 3), (4, 4), (5, 4), (11, 10)], 
     [(3, 4), (1, 6)], 
     [(7, 2), (2, 3), (14, 3), (3, 4)], 
@@ -120,7 +120,8 @@ class Tndp:
         num = 0
         for i in range(len(self.routes)):
             freq[i] = self.route_max_flows[i]/CAP
-            num += math.ceil((self.route_times[i]*self.route_max_flows[i])/(CAP*30))
+            num += math.ceil(self.route_times[i]*freq[i]/30)
+            # num += math.ceil((self.route_times[i]*self.route_max_flows[i])/(CAP*30))
         return num
 
     def is_0_transfer(self,i,j):
