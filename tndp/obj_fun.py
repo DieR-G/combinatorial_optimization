@@ -111,55 +111,134 @@ def compute_0_time(i, j, Ri, Rj, routes, frequencies, arcs):
     return tt, wt
 
 def compute_1_time(i, j, Ri, Rj, routes, input_freq, arcs):
-    tt, wt, trt = 0, 0, 0
+    tt,wt,trt = 0,0,0
     possible_routes = [(ri, rj) for ri in Ri for rj in Rj if set(routes[ri]).intersection(routes[rj])]
     possible_transfers = [(p[0], p[1], tf) for p in possible_routes for tf in set(routes[p[0]]).intersection(routes[p[1]])]
-    min_time = min(compute_time(i, p[2], routes[p[0]]) + compute_time(p[2], j, routes[p[1]]) + 60/(2*input_freq[p[0]]) + 60/(2*input_freq[p[1]]) + TRANSFER_TIME for p in possible_transfers)
-    filtered_routes = [ p for p in possible_transfers if compute_time(i, p[2], routes[p[0]]) + compute_time(p[2], j, routes[p[1]]) + 60/(2*input_freq[p[0]]) + 60/(2*input_freq[p[1]]) + TRANSFER_TIME < ONE_TRANSFER_MAX * min_time]
-    trip_classes = {}
-    for route, _, transfer_node in filtered_routes:
-        if route not in trip_classes:
-            trip_classes[route] = []
-        trip_classes[route].append((route, _, transfer_node))
-    
-    total_class_frequency = sum([input_freq[x] for x in trip_classes])
-    
+
+    min_time = min(
+        compute_time(i, p[2], routes[p[0]]) + compute_time(p[2], j, routes[p[1]]) +
+        60 / (2 * input_freq[p[0]]) + 60 / (2 * input_freq[p[1]]) + TRANSFER_TIME
+        for p in possible_transfers
+    )
+
+    filtered_routes = [
+        p for p in possible_transfers
+        if compute_time(i, p[2], routes[p[0]]) + compute_time(p[2], j, routes[p[1]]) +
+           60 / (2 * input_freq[p[0]]) + 60 / (2 * input_freq[p[1]]) + TRANSFER_TIME <
+           ONE_TRANSFER_MAX * min_time
+    ]
+
+    trip_classes = {route: [(r, _, transfer_node) for r, _, transfer_node in filtered_routes if r == route]
+                    for route in set(r for r, _, _ in filtered_routes)}
+
+    total_class_frequency = sum(input_freq[x] for x in trip_classes)
+
     for key, value in trip_classes.items():
-        P_ijk = input_freq[key]/total_class_frequency
+        P_ijk = input_freq[key] / total_class_frequency
         travel, waiting, transfer = 0, 0, 0
+
         for depart, arrive, transfer_node in value:
-            P_ijkm = 1/len(value)
-            travel += P_ijkm*(compute_time(i, transfer_node, routes[depart]) + compute_time(transfer_node, j, routes[arrive]))
-            waiting += P_ijkm*(60/(2*input_freq[arrive]))
-            transfer += TRANSFER_TIME*P_ijkm
+            P_ijkm = 1 / len(value)
+            travel += P_ijkm * (
+                    compute_time(i, transfer_node, routes[depart]) +
+                    compute_time(transfer_node, j, routes[arrive])
+            )
+            waiting += P_ijkm * (60 / (2 * input_freq[arrive]))
+            transfer += TRANSFER_TIME * P_ijkm
+
             for arc in get_path(transfer_node, j, routes[arrive]):
-                arcs[arrive][arc] += P_ijk*P_ijkm*demand_matrix[i][j]
+                arcs[arrive][arc] += P_ijk * P_ijkm * demand_matrix[i][j]
+
         for arc in get_path(i, transfer_node, routes[depart]):
-            arcs[depart][arc] += P_ijk*demand_matrix[i][j]
-        tt += P_ijk*travel
-        wt += P_ijk*waiting
-        trt += P_ijk*transfer
-        wt += P_ijk*60/(2*total_class_frequency)
+            arcs[depart][arc] += P_ijk * demand_matrix[i][j]
+
+        tt += P_ijk * travel
+        wt += P_ijk * waiting
+        trt += P_ijk * transfer
+        wt += P_ijk * 60 / (2 * total_class_frequency)
+
     return tt, wt, trt
-
-
-
 
 def compute_2_time(i, j, Ri, Rj, routes, input_freq, arcs):
-    tt = 0
-    wt = 0
-    trt = 0
-    
-    
-    
-    
+    tt, wt, trt = 0, 0, 0
+
+    aux_set = set(Ri).union(Rj)
+    complement = [e for (e, _) in enumerate(routes) if e not in aux_set]
+
+    possible_routes = [
+        (r1, r2, r3) 
+        for r1 in Ri 
+        for r2 in Rj 
+        for r3 in complement 
+        if set(routes[r3]).intersection(routes[r1]) and set(routes[r3]).intersection(routes[r2])
+    ]
+
+    possible_transfers = [
+        (r1, r2, r3, tf1, tf2) 
+        for (r1, r2, r3) in possible_routes 
+        for tf1 in set(routes[r3]).intersection(routes[r1]) 
+        for tf2 in set(routes[r3]).intersection(routes[r2])
+    ]
+
+    min_time = min(
+        compute_time(i, tf1, routes[r1]) + compute_time(tf1, tf2, routes[r3]) + 
+        compute_time(tf2, j, routes[r2]) + 
+        60 / (2 * input_freq[r1]) + 60 / (2 * input_freq[r2]) + 60 / (2 * input_freq[r3]) + 
+        2 * TRANSFER_TIME 
+        for (r1, r2, r3, tf1, tf2) in possible_transfers
+    )
+
+    filtered_routes = [
+        (r1, r2, r3, tf1, tf2) 
+        for (r1, r2, r3, tf1, tf2) in possible_transfers 
+        if compute_time(i, tf1, routes[r1]) + compute_time(tf1, tf2, routes[r3]) + 
+           compute_time(tf2, j, routes[r2]) + 
+           60 / (2 * input_freq[r1]) + 60 / (2 * input_freq[r2]) + 60 / (2 * input_freq[r3]) + 
+           2 * TRANSFER_TIME < TWO_TRANSFER_MAX * min_time
+    ]
+
+    trip_classes = {route: [(r1, r2, r3, tf1, tf2) for r1, r2, r3, tf1, tf2 in filtered_routes if r1 == route]
+                    for route in set(r1 for r1, _, _, _, _ in filtered_routes)}
+
+    total_class_frequency = sum(input_freq[x] for x in trip_classes)
+
+    for key, value in trip_classes.items():
+        P_ijk = input_freq[key] / total_class_frequency
+        travel, waiting, transfer = 0, 0, 0
+
+        for r1, r2, r3, tf1, tf2 in value:
+            P_ijkm = 1 / len(value)
+            travel += P_ijkm * (
+                    compute_time(i, tf1, routes[r1]) +
+                    compute_time(tf1, tf2, routes[r3]) +
+                    compute_time(tf2, j, routes[r2])
+            )
+            waiting += P_ijkm * (60 / (2 * input_freq[r2]))
+            transfer += 2 * TRANSFER_TIME * P_ijkm
+
+            for arc in get_path(tf2, j, routes[r2]):
+                arcs[r2][arc] += P_ijk * P_ijkm * demand_matrix[i][j]
+
+            for arc in get_path(i, tf1, routes[r1]):
+                arcs[r1][arc] += P_ijk * demand_matrix[i][j]
+
+            for arc in get_path(tf1, tf2, routes[r3]):
+                arcs[r3][arc] += P_ijk * P_ijkm * demand_matrix[i][j]
+
+        wt += P_ijk * waiting
+        tt += P_ijk * travel
+        trt += P_ijk * transfer
+        wt += P_ijk * 60 / (2 * total_class_frequency)
+
     return tt, wt, trt
+
 
 def update_frequencies(frequencies, arcs):
     for i, _ in enumerate(frequencies):
         frequencies[i] = arcs[i][max(arcs[i], key = arcs[i].get)]/CAP
 
 def assign(routes, frequencies):
+    print("\n")
     D_NS = 0
     D_0 = 0
     D_1 = 0
@@ -200,13 +279,13 @@ def assign(routes, frequencies):
                     else:
                         D_NS += demand_matrix[i][j]/TOTAL_DEMAND
         update_frequencies(output_freq, arcs)
-        print(input_freq, output_freq)
         if frequency_deviation(input_freq, output_freq) < DELTA_F:
             break
-    print(f"D0:{D_0} D1:{D_1} D2:{D_2} DNS: {D_NS}")
-    print(f"Travel time: {total_tt}\n Waiting time: {total_wt}\n Transfer time: {total_trt}\n Frequencies: {output_freq}")
+    print(f"Travel time: {total_tt}\t Waiting time: {total_wt}\t Transfer time: {total_trt}")
+    print("\n")
 
 def test_assign(routes, frequencies):
+    print("\n")
     D_NS = 0
     D_0 = 0
     D_1 = 0
@@ -242,35 +321,16 @@ def test_assign(routes, frequencies):
                     total_trt += trt*demand_matrix[i][j]
                 else:
                     D_NS += demand_matrix[i][j]/TOTAL_DEMAND
-    print(f"Travel time: {total_tt}\n Waiting time: {total_wt}\n Transfer time: {total_trt}")
+    print(f"In vehicle time: {total_tt}\t Waiting time: {total_wt}\t Transfer time: {total_trt}")
+    print("\n")
     return D_0, D_1, D_2, D_NS
 
 #print(test_assign([[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[12,13,9]],[10,1,5,1]))
 #print(test_assign([[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]], [1,10,1]))
 #print(test_assign([[6,14,7,9,10,11],[6,14,5,7,9,13,12],[0,1,2,5,7],[8,14,6,9],[4,3,5,7,9],[0,1,2,5,14,8]],[1,1,1,1,1,1]))
 
-#assign([[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[12,13,9]],[10,1,5,1])
-#assign([[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]], [1,1,1])
+assign([[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]], [1,1,1])
+assign([[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[12,13,9]],[10,1,5,1])
 assign([[6,14,7,9,10,11],[6,14,5,7,9,13,12],[0,1,2,5,7],[8,14,6,9],[4,3,5,7,9],[0,1,2,5,14,8]],[35,35,35,35,35,35])
-assign(
-    [
-        [9,12],
-        [9,10,11],
-        [9,13],
-        [0,1,2,5,7,9],
-        [8,14,6,9],
-        [4,3,5,7,9],
-        [0,1,3,4]
-    ],
-    [100,100,100,100,100,100,100]
-)
-assign([
-    [0,1,3,11,10,12,13],
-    [2,5,7,14,6,9],
-    [9,10,12],
-    [9,10,11],
-    [7,9,13],
-    [0,1,3,5],
-    [8,14,5,7,9],
-    [4,1,2,5,14,6,9]
-    ],[100,100,100,100,100,100,100,100])
+assign([[9,12],[9,10,11],[9,13],[0,1,2,5,7,9],[8,14,6,9],[4,3,5,7,9],[0,1,3,4]],[100,100,100,100,100,100,100])
+assign([[0,1,3,11,10,12,13],[2,5,7,14,6,9],[9,10,12],[9,10,11],[7,9,13],[0,1,3,5],[8,14,5,7,9],[4,1,2,5,14,6,9]],[100,100,100,100,100,100,100,100])
