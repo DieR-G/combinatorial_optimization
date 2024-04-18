@@ -10,7 +10,7 @@ def simulate(coordinates, network_frequencies, network_routes, simulation_time, 
     total_time = max(list(map(lambda x: compute_time(x[0], x[-1], x), network_routes)))*60
     total_time = 0
     #passengers = generate_passengers(total_time, network_routes)
-    #passengers = [Passenger(0, [9], 5, 9), Passenger(0, [9], 7, 9)]
+    #passengers = [Passenger(0, [10], 0, 10), Passenger(0, [0], 10, 0)]
     passengers = generate_passengers_test(network_routes)
     #passengers = generate_passengers_test_prop(network_routes, network_frequencies)
     #bus_routes = generate_bus_test(network_routes, network_frequencies, network_coordinates, CAP)
@@ -45,7 +45,7 @@ def simulate(coordinates, network_frequencies, network_routes, simulation_time, 
             if bus.dir > 0:
                 to = bus.route[bus.route_position:]
             else:
-                to = bus.route[0: bus.route_position - 1]
+                to = bus.route[0: bus.route_position + 1]
             if passenger.path[-1] in to:
                 passenger.current_bus = bus.id
                 bus.capacity -= 1
@@ -55,24 +55,28 @@ def simulate(coordinates, network_frequencies, network_routes, simulation_time, 
     while len(passengers) > 0:
     #for time in range(simulation_time+1):
         #print(len(passengers))
-        if total_time <= time:
+        for route in bus_routes:
+            for bus in route:
+                if bus.starting_time <= time and bus.state == "on_station":
+                    #print("Before alight")
+                    #print(bus)
+                    for p in passengers:
+                        alight_passengers(bus, p, time)
+                    passengers = list(filter(lambda x: x.active, passengers))
+                    for p in passengers:
+                        board_passengers(bus, p, time) 
+                    #print("After boarding")  
+                    #print(bus)
+                bus.move()
+                assert(bus.capacity >= 0 and bus.capacity <= 50)
+        """ if total_time <= time:
             for p in passengers:
                 if p.active and p.arrival_time <= time:
                     if p.current_bus == "-1":
                         w_time += 1
                     else:
-                        inv_time += 1
-        for route in bus_routes:
-            for bus in route:
-                if bus.starting_time <= time and bus.state == "on_station":
-                    for p in passengers:
-                        alight_passengers(bus, p, time)
-                    passengers = list(filter(lambda x: x.active, passengers))
-                    for p in passengers:
-                        board_passengers(bus, p, time)   
-                bus.move()
-                assert(bus.capacity >= 0 and bus.capacity <= 50)
-        #inv_time += on_bus
+                        inv_time += 1 """
+        inv_time += on_bus
         time += 1
     print(time)
     print(inactives)
@@ -102,12 +106,12 @@ network_routes = [
 ]
 simulation_time = 600 """
 
-""" network_routes = [[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[9,13,12]]
-network_frequencies = [68.2, 19.900000000000002, 15.35930618219989, 5.93956326268465] 
-simulation_time = 5580 """
-
-network_routes = [[0,1,2,5,7,9,10,12]]
-network_frequencies = [10] 
+network_routes = [[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[9,13,12]]
+network_frequencies = [68.2, 19.900000000000002, 15.204923930650404, 5.438561743789965] 
 simulation_time = 5580
 
+""" network_routes = [[0,1,2,5,7,9,10]]
+network_frequencies = [10] 
+simulation_time = 5580
+"""
 simulate(coordinates, network_frequencies, network_routes, simulation_time, CAP)

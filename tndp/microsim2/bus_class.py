@@ -40,7 +40,11 @@ class Bus:
         # Careful with routes with only one node!
         dt = (self.time_node_map[self.get_next_pos()])
         self.step = (self.get_next_coord() - self.get_last_coord())*(1/dt)
-        
+    
+    def __str__(self):
+        str = f"Bus {self.id} at:{self.current_node}, capacity: {self.capacity}"
+        return str
+    
     def move(self):
         self.pos = self.pos + self.step
         vec = self.pos - self.get_next_coord()

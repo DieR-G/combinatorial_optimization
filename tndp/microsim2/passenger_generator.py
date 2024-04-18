@@ -56,6 +56,14 @@ def generate_passengers_test(routes):
             for k in range(total_users):
                 new_passenger = Passenger(0, copy.deepcopy(travels[i][j][k%len(travels[i][j])]), i, j)
                 passenger_vector.append(new_passenger)
+    """ for _ in range(100):
+        passenger_vector.append(Passenger(0, [12], 0, 12))
+        passenger_vector.append(Passenger(0, [0], 12, 0))
+        passenger_vector.append(Passenger(0, [12], 1, 12))
+        passenger_vector.append(Passenger(0, [1], 12, 1))
+        passenger_vector.append(Passenger(0, [5], 0, 5))
+        passenger_vector.append(Passenger(0, [0], 5, 0)) """
+    
     return passenger_vector
 
 def generate_passengers_test_prop(routes, frequencies):

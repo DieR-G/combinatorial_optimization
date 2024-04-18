@@ -53,5 +53,5 @@ def generate_buses(routes, frequencies, network_coordinates, capacity):
     return buses
 
 def generate_bus_test(routes, frequencies, network_coordinates, capacity):
-    return [[Bus("1", routes[0], network_coordinates[0], 6000, 0, 0),
-             Bus("2", list(reversed(routes[0])), network_coordinates[0], 6000, 0, 0)]]
+    return [[Bus("1", routes[0], network_coordinates[0], 50, 0, 0),
+             Bus("2", list(reversed(routes[0])), network_coordinates[0], 50, 0, 0)]]
