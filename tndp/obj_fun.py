@@ -1,49 +1,25 @@
 from collections import defaultdict
 import numpy as np
+import datetime
+import json
+
+DEMAND_MATRIX_FILE = "obj_func_data/Mandl/demand_matrix.json"
+ROAD_NETWORK_FILE = "obj_func_data/Mandl/network.json"
 CAP = 40*1.25
 TRANSFER_TIME = 5
 ZERO_TRANSFER_MAX = 1.5
 ONE_TRANSFER_MAX = 1.1
 TWO_TRANSFER_MAX = 1.1
-DELTA_F = 0.001
+DELTA_F = 0.1
 
-demand_matrix = np.array([
-    [0, 400, 200, 60, 80, 150, 75, 75, 30, 160, 30, 25, 35, 0, 0],
-    [400, 0, 50, 120, 20, 180, 90, 90, 15, 130, 20, 10, 10, 5, 0],
-    [200, 50, 0, 40, 60, 180, 90, 90, 15, 45, 20, 10, 10, 5, 0],
-    [60, 120, 40, 0, 50, 100, 50, 50, 15, 240, 40, 25, 10, 5, 0],
-    [80, 20, 60, 50, 0, 50, 25, 25, 10, 120, 20, 15, 5, 0, 0],
-    [150, 180, 180, 100, 50, 0, 100, 100, 30, 880, 60, 15, 15, 10, 0],
-    [75, 90, 90, 50, 25, 100, 0, 50, 15, 440, 35, 10, 10, 5, 0],
-    [75, 90, 90, 50, 25, 100, 50, 0, 15, 440, 35, 10, 10, 5, 0],
-    [30, 15, 15, 15, 10, 30, 15, 15, 0, 140, 20, 5, 0, 0, 0],
-    [160, 130, 45, 240, 120, 880, 440, 440, 140, 0, 600, 250, 500, 200, 0],
-    [30, 20, 20, 40, 20, 60, 35, 35, 20, 600, 0, 75, 95, 15, 0],
-    [25, 10, 10, 25, 15, 15, 10, 10, 5, 250, 75, 0, 70, 0, 0],
-    [35, 10, 10, 10, 5, 15, 10, 10, 0, 500, 95, 70, 0, 45, 0],
-    [0, 5, 5, 5, 0, 10, 5, 5, 0, 200, 15, 0, 45, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-])
+def load_file(filename):
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+demand_matrix = np.array(load_file(DEMAND_MATRIX_FILE))
+network = load_file(ROAD_NETWORK_FILE)
 
 TOTAL_DEMAND = np.sum(demand_matrix)
-
-network = [
-    [(1, 8)], 
-    [(2, 2), (3, 3), (4, 6), (0, 8)],
-    [(1, 2), (5, 3)], 
-    [(1, 3), (4, 4), (5, 4), (11, 10)], 
-    [(3, 4), (1, 6)], 
-    [(7, 2), (2, 3), (14, 3), (3, 4)], 
-    [(14, 2), (9, 7)], 
-    [(5, 2), (14, 2), (9, 8)], 
-    [(14, 8)], 
-    [(10, 5), (6, 7), (7, 8), (13, 8), (12, 10)], 
-    [(12, 5), (9, 5), (11, 10)], 
-    [(3, 10), (10, 10)], 
-    [(13, 2), (10, 5), (9, 10)], 
-    [(12, 2), (9, 8)], 
-    [(7, 2), (6, 2), (5, 3), (8, 8)]
-]
 
 def frequency_deviation(f, o):
     sq_diff = 0
@@ -137,27 +113,27 @@ def compute_1_time(i, j, Ri, Rj, routes, input_freq, arcs):
     trip_classes = filter_trips_by_class(filtered_routes)
 
     total_class_frequency = sum(input_freq[x] for x in trip_classes)
-
     for key, value in trip_classes.items():
         P_ijk = input_freq[key] / total_class_frequency
         travel, transfer = 0, 0
         for depart, arrive, transfer_node in value:
             P_ijkm = 1/len(value)
+            P_ijkm *= P_ijk
             travel += P_ijkm * (
                     compute_time(i, transfer_node, routes[depart]) +
                     compute_time(transfer_node, j, routes[arrive])
             )
-            wt += P_ijk*P_ijkm*(60/(2*total_class_frequency))
-            wt += P_ijk*P_ijkm*(60 / (2*input_freq[arrive]))
+            wt += P_ijkm*(60 / (2*input_freq[depart]))
+            wt += P_ijkm*(60 / (2*input_freq[arrive]))
             transfer += TRANSFER_TIME * P_ijkm
 
             for arc in get_path(i, transfer_node, routes[depart]):
-                arcs[depart][arc] += P_ijkm * P_ijk * demand_matrix[i][j]
+                arcs[depart][arc] += P_ijkm * demand_matrix[i][j]
 
             for arc in get_path(transfer_node, j, routes[arrive]):
-                arcs[arrive][arc] += P_ijk * P_ijkm * demand_matrix[i][j]
-        tt += P_ijk * travel
-        trt += P_ijk * transfer
+                arcs[arrive][arc] +=  P_ijkm * demand_matrix[i][j]
+        tt += travel
+        trt += transfer
 
     return tt, wt, trt
 
@@ -207,36 +183,39 @@ def compute_2_time(i, j, Ri, Rj, routes, input_freq, arcs):
         travel, transfer = 0, 0
         for r1, r2, r3, tf1, tf2 in value:
             P_ijkm = 1 / len(value)
+            P_ijkm *= P_ijk
             travel += P_ijkm * (
                     compute_time(i, tf1, routes[r1]) +
                     compute_time(tf1, tf2, routes[r3]) +
                     compute_time(tf2, j, routes[r2])
             )
-            wt += P_ijk*P_ijkm*(60 / (2 * total_class_frequency))
-            wt +=  P_ijk*P_ijkm*(60 / (2 * input_freq[r2]))
-            wt +=  P_ijk*P_ijkm*(60 / (2 * input_freq[r3]))
+            wt += P_ijkm*(60 / (2 * input_freq[r1]))
+            wt += P_ijkm*(60 / (2 * input_freq[r2]))
+            wt += P_ijkm*(60 / (2 * input_freq[r3]))
             
             transfer += 2 * TRANSFER_TIME * P_ijkm
 
             for arc in get_path(tf2, j, routes[r2]):
-                arcs[r2][arc] += P_ijk * P_ijkm * demand_matrix[i][j]
+                arcs[r2][arc] += P_ijkm * demand_matrix[i][j]
 
             for arc in get_path(tf1, tf2, routes[r3]):
-                arcs[r3][arc] += P_ijk * P_ijkm * demand_matrix[i][j]
+                arcs[r3][arc] += P_ijkm * demand_matrix[i][j]
                 
             for arc in get_path(i, tf1, routes[r1]):
-                arcs[r1][arc] += P_ijk * P_ijkm * demand_matrix[i][j]
+                arcs[r1][arc] += P_ijkm * demand_matrix[i][j]
             
         #wt += P_ijk * waiting
-        tt += P_ijk * travel
-        trt += P_ijk * transfer
+        tt +=  travel
+        trt += transfer
         #wt +=  P_ijk * 60 / (2 * total_class_frequency)
 
     return tt, wt, trt
 
 def update_frequencies(frequencies, arcs):
     for i, _ in enumerate(frequencies):
-        frequencies[i] = arcs[i][max(arcs[i], key = arcs[i].get)]/CAP
+        val = max(arcs[i], key = arcs[i].get)
+        frequencies[i] = arcs[i][val]/CAP
+        #print(f"Maximum flow: {frequencies[i]*CAP} in {val}")
 
 def assign(routes, frequencies):
     print("\n")
@@ -247,6 +226,7 @@ def assign(routes, frequencies):
     output_freq = frequencies
     input_freq = output_freq
     total_tt, total_wt, total_trt = 0, 0, 0
+    iterations = 0
     while True:
         arcs = []
         arcs = get_arcs_flow(routes)
@@ -265,12 +245,14 @@ def assign(routes, frequencies):
                         tt, wt = compute_0_time(i, j, Ri, Rj, routes, input_freq, arcs)
                         total_tt += tt*demand_matrix[i][j]
                         total_wt += wt*demand_matrix[i][j]
+                        #print((i, j), wt*demand_matrix[i][j])
                     elif is_one_transfer(Ri, Rj, routes):
                         D_1 += demand_matrix[i][j]/TOTAL_DEMAND
                         tt, wt, trt = compute_1_time(i, j, Ri, Rj, routes, input_freq, arcs)
                         total_tt += tt*demand_matrix[i][j]
                         total_wt += wt*demand_matrix[i][j]
                         total_trt += trt*demand_matrix[i][j]
+                        #print((i, j), wt*demand_matrix[i][j])
                     elif is_two_transfer(Ri, Rj, routes):
                         D_2 += demand_matrix[i][j]/TOTAL_DEMAND
                         tt, wt, trt = compute_2_time(i, j, Ri, Rj, routes, input_freq, arcs)
@@ -282,16 +264,27 @@ def assign(routes, frequencies):
         update_frequencies(output_freq, arcs)
         if frequency_deviation(input_freq, output_freq) < DELTA_F:
             break
+        iterations += 1
+    print(iterations)
     buses = 0
     for e, r in enumerate(routes):
         buses += output_freq[e]*(compute_time(r[0], r[-1], r)/30)
     print(f"Travel time: {total_tt}\t Waiting time: {total_wt}\t Transfer time: {total_trt}\n Frequencies:{output_freq} \n Buses:{buses}")
     print("\n")
+
+#ts = datetime.datetime.now()
 #assign([[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]], [10,1,1])
-#assign([[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[9,13,12]], [10,10,10,10])
-assign([[0,1,2,5,7,9,10,12]],[1])
+#te = datetime.datetime.now()
+#print(te-ts)
+
+#assign([[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]], [10, 10, 10])
+assign([[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]], [10,10,10,10])
+#assign([[9,13,12]], [10])
+#assign([[0,1,2,5,7,9,10,12]],[1])
 #assign([[0,1,2,5,7,9,10]], [10])
-#assign([[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[12,13,9]],[10,5,10,1])
+#assign([[0,1,2,5,7,9,10,12],[4,3,5,7,14,6],[11,3,5,14,8],[9,13,12]],[1,1,1,1])
 #assign([[6,14,7,9,10,11],[6,14,5,7,9,13,12],[0,1,2,5,7],[8,14,6,9],[4,3,5,7,9],[0,1,2,5,14,8]],[35,35,35,35,35,35])
 #assign([[9,12],[9,10,11],[9,13],[0,1,2,5,7,9],[8,14,6,9],[4,3,5,7,9],[0,1,3,4]],[100,100,100,100,100,100,100])
 #assign([[0,1,3,11,10,12,13],[2,5,7,14,6,9],[9,10,12],[9,10,11],[7,9,13],[0,1,3,5],[8,14,5,7,9],[4,1,2,5,14,6,9]],[100,100,100,100,100,100,100,100])
+#x = sum([demand_matrix[y][x] for y in [0,1,2,5,7,9,10,12] for x in [0,1,2,5,7,9,10,12]]) * 60/(2*38) 
+#print(x)

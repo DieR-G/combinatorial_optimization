@@ -42,14 +42,18 @@ def generate_buses(routes, frequencies, network_coordinates, capacity):
         bus_number = math.ceil(frequencies[k]*route_time/30)
         #75.02 9.28 13.55 1.81  99.6
         #68.2
-        time_delta = 3600 / bus_number
+        #time_delta = 3600 / bus_number
+        time_delta = math.ceil(3600 / frequencies[k])
         start_time = 0
-        for i in range(bus_number//2):
-            buses[k].append(Bus(str(k) + str(2*i), routes[k], network_coordinates[k],
-                            capacity, math.ceil(start_time), route_time))
-            buses[k].append(Bus(str(k) + str(2*i+1),list(reversed(routes[k])), list(
-                reversed(network_coordinates[k])), capacity, math.ceil(start_time), route_time))
+        #i = 1
+        #while start_time <= 3600:
+        for i in range(bus_number):
+            new_bus = Bus(str(k) + str(i), routes[k], network_coordinates[k],
+                            capacity, start_time, route_time)
+            buses[k].append(new_bus)
+            #buses[k].append(Bus(str(k) + str(2*i+1),list(reversed(routes[k])), list(reversed(network_coordinates[k])), capacity, start_time, route_time))
             start_time += time_delta
+            i += 1
     return buses
 
 def generate_bus_test(routes, frequencies, network_coordinates, capacity):

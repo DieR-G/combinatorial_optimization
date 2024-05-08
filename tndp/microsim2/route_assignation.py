@@ -47,13 +47,24 @@ def is_two_transfer(Ri, Rj, routes):
     return False
 
 def compute_time(i, j, r):
+    if i == j:
+        return 0
     start, end = sorted((r.index(i), r.index(j)))
     edges = [(network[r[m]], r[m + 1]) for m in range(start, end)]
     cost = sum(list(map(lambda p: next((c for a, c in p[0] if a == p[1]), (0, 0)), edges)))
     return cost
-  
+
+def compute_time_first_bus(i, j, r):
+    start, end = r.index(i), r.index(j)
+    if(start > end):
+        return compute_time(r[-1], i, r)
+    return compute_time(r[0], i, r)
+
 def get_min_time(i, j, search_routes, routes):
     return min(map(lambda x: compute_time(i,j,routes[x]), search_routes))    
+
+def get_min_first_route(i, j, search_routes, routes):
+    return min(map(lambda x: compute_time_first_bus(i,j,routes[x]), search_routes))
 
 def get_path(i, j, r):
     f_index, s_index = (r.index(i), r.index(j))
@@ -233,13 +244,17 @@ def get_first_transfers_routes(i, j, routes):
     min_time = 0
     if is_zero_transfer(Ri, Rj):
         possible_routes = set(Ri).intersection(Rj)
-        min_time = get_min_time(i, j, possible_routes, routes)
+        min_time = get_min_first_route(i, j, possible_routes, routes)
     elif is_one_transfer(Ri, Rj, routes):
         possible_routes = [(ri, rj) for ri in Ri for rj in Rj if set(routes[ri]).intersection(routes[rj])]
         possible_transfers = [(p[0], p[1], tf) for p in possible_routes for tf in set(routes[p[0]]).intersection(routes[p[1]])]
 
         min_time = min(
-            compute_time(i, p[2], routes[p[0]]) + compute_time(p[2], j, routes[p[1]])
+            compute_time_first_bus(i, p[2], routes[p[0]]) + compute_time_first_bus(p[2], j, routes[p[1]])
+            for p in possible_transfers
+        )
+        min_time = min(
+            max(compute_time_first_bus(i, p[2], routes[p[0]]), compute_time_first_bus(p[2], j, routes[p[1]]) - compute_time(i, p[2], routes[p[0]]))
             for p in possible_transfers
         )
         
@@ -263,11 +278,14 @@ def get_first_transfers_routes(i, j, routes):
         ]
 
         min_time = min(
-            compute_time(i, tf1, routes[r1]) + compute_time(tf1, tf2, routes[r3]) + 
-            compute_time(tf2, j, routes[r2])
+            compute_time_first_bus(i, tf1, routes[r1]) + compute_time_first_bus(tf1, tf2, routes[r3]) + 
+            compute_time_first_bus(tf2, j, routes[r2])
             for (r1, r2, r3, tf1, tf2) in possible_transfers
         )
-
+        min_time = min(
+            max([compute_time_first_bus(i, tf1, routes[r1]), compute_time_first_bus(tf1, tf2, routes[r3]) - compute_time(i, tf1, routes[r1]), compute_time_first_bus(tf2, j, routes[r2]) - (compute_time(i, tf1, routes[r1]) + compute_time(tf1, tf2, routes[r3]))])
+            for (r1, r2, r3, tf1, tf2) in possible_transfers
+        )
     return min_time
 
 def get_travel_routes_prop(routes, frequencies):

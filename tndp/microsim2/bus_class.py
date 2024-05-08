@@ -34,13 +34,13 @@ class Bus:
         self.current_node = route[0]
         self.state = "on_station"
         self.starting_time = starting_time
-        self.time_map = self.node_at_time()
+        self.node_time_map, self.index_time_list = self.node_at_time()
         self.time_node_map = self.time_at_node()
-        self.total_time = total_time
+        self.total_time = 60*total_time
+        self.step = Vector((0,0))
+        self.set_pos_at_time(self.starting_time)
         # Careful with routes with only one node!
-        dt = (self.time_node_map[self.get_next_pos()])
-        self.step = (self.get_next_coord() - self.get_last_coord())*(1/dt)
-    
+        
     def __str__(self):
         str = f"Bus {self.id} at:{self.current_node}, capacity: {self.capacity}"
         return str
@@ -83,18 +83,67 @@ class Bus:
     
     def get_last_coord(self):
         return Vector(self.route_coords[self.in_bounds(self.route_position - self.dir)])
-        
     
+    def binary_search(self, f):
+        n = len(self.route) - 1
+        l, h = 0, n
+        while l < h:
+            m = (h+l)//2
+            if f(m):
+                h = m
+            else:
+                l = m + 1
+        return l
+    
+    def get_pos_at_time(self, t):
+        t %= 2*self.total_time 
+        if t >= self.total_time:
+            t -= self.total_time
+            idx = self.binary_search(lambda x: self.index_time_list[-1] - self.index_time_list[x] < t)
+            self.dir = -1
+            computed_time = t - self.index_time_list[-1] + self.index_time_list[idx]
+        else:
+            idx = self.binary_search(lambda x: self.index_time_list[x] > t)
+            idx -= 1
+            computed_time = t - self.index_time_list[idx]
+        current_cord = self.route_coords[idx]
+        next_idx = idx+self.dir
+        next_cord = self.route_coords[next_idx]
+        factor = (1/abs(self.time_node_map[self.route[next_idx]]-self.time_node_map[self.route[idx]]))
+        pos = (Vector(next_cord) - Vector(current_cord))
+        step = pos*factor
+        pos = step*computed_time
+        pos = Vector(current_cord) + pos
+        return idx, next_idx, pos, step
+    
+    def set_pos_at_time(self, t):
+        at, next, pos, step = self.get_pos_at_time(t)
+        vec1, vec2 = (Vector(self.route_coords[at]) - pos), (Vector(self.route_coords[next]) - pos)
+        if vec1.norm() < EPS:
+            self.state = "on_station"
+            self.route_position = at
+            self.current_node = self.route[at]
+            self.step = step
+        elif vec2.norm() < EPS:
+            self.state = "on_station"
+            self.route_position = next
+            self.current_node = self.route[next]
+            self.update_pos()
+        else:
+            self.state = "on_road"
+            
     def node_at_time(self):
         node_time_map = {}
+        node_time_list = [0]*len(self.route)
         current_node = self.route[0]
         t = 0
-        for node in self.route:
+        for idx, node in enumerate(self.route):
             t += next((c for a,c in network[node] if a == current_node), 0)
             node_time_map[t] = node
+            node_time_list[idx] = t*60
             current_node = node
-        return node_time_map
+        return node_time_map, node_time_list
     
     def time_at_node(self):
-        time_node_map = {v:x*60 for x,v in self.node_at_time().items()}
+        time_node_map = {v:x*60 for x,v in self.node_time_map.items()}
         return time_node_map
