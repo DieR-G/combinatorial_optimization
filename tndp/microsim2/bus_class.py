@@ -118,15 +118,15 @@ class Bus:
     
     def set_pos_at_time(self, t):
         at, next, pos, step = self.get_pos_at_time(t)
+        self.step = step
+        self.route_position = next
+        self.pos = pos
         vec1, vec2 = (Vector(self.route_coords[at]) - pos), (Vector(self.route_coords[next]) - pos)
         if vec1.norm() < EPS:
             self.state = "on_station"
-            self.route_position = at
             self.current_node = self.route[at]
-            self.step = step
         elif vec2.norm() < EPS:
             self.state = "on_station"
-            self.route_position = next
             self.current_node = self.route[next]
             self.update_pos()
         else:

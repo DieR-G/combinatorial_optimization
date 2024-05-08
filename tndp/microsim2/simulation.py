@@ -58,7 +58,7 @@ def simulate(coordinates, network_frequencies, network_routes, simulation_time, 
     time = 0
     while len(passengers) > 0:
     #for time in range(simulation_time+1):
-        print(len(passengers))
+        #print(len(passengers))
         station_passengers = [0]*STATION_NUMBER
         for route in bus_routes:
             for bus in route:
@@ -74,7 +74,7 @@ def simulate(coordinates, network_frequencies, network_routes, simulation_time, 
                         if p.arrival_time > time:
                             continue
                         board_passengers(bus, p, time) 
-                        print(f"time: {time}, wait_time: {w_time}")
+                        #print(f"time: {time}, wait_time: {w_time}")
                     #print("After boarding")  
                     #print(bus)
                 bus.move()
