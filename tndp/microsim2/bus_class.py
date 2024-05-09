@@ -39,6 +39,7 @@ class Bus:
         self.total_time = 60*total_time
         self.step = Vector((0,0))
         self.set_pos_at_time(self.starting_time)
+        self.stations_map = {i:[] for i in self.route}
         # Careful with routes with only one node!
         
     def __str__(self):
