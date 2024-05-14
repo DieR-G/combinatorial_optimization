@@ -4,6 +4,7 @@ class Vector:
     def __init__(self, p):
         self.x = p[0]
         self.y = p[1]
+        self.norm_sq = self.x*self.x + self.y*self.y
     
     def __sub__(self, b):
         return Vector((self.x - b.x, self.y - b.y))

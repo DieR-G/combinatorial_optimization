@@ -1,6 +1,6 @@
 from vector_class import Vector
 
-EPS = 1e-9
+EPS = (1e-9)*(1e-9)
 
 network = [
     [(1, 8)], 
@@ -49,7 +49,7 @@ class Bus:
     def move(self):
         self.pos = self.pos + self.step
         vec = self.pos - self.get_next_coord()
-        if vec.norm() < EPS:
+        if vec.norm_sq < EPS:
             self.state = "on_station"
             self.current_node = self.get_next_pos()
             self.update_pos()
@@ -123,10 +123,10 @@ class Bus:
         self.route_position = next
         self.pos = pos
         vec1, vec2 = (Vector(self.route_coords[at]) - pos), (Vector(self.route_coords[next]) - pos)
-        if vec1.norm() < EPS:
+        if vec1.norm_sq < EPS:
             self.state = "on_station"
             self.current_node = self.route[at]
-        elif vec2.norm() < EPS:
+        elif vec2.norm_sq < EPS:
             self.state = "on_station"
             self.current_node = self.route[next]
             self.update_pos()

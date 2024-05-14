@@ -4,6 +4,8 @@ import datetime
 import itertools
 
 STATION_NUMBER = 15
+MAX_TIME_SIMULATED = 10000
+TRANSFER_TIME = 5*60
 
 station_passengers_history = []
 time_history = []
@@ -11,7 +13,7 @@ def simulate(coordinates, network_frequencies, network_routes, CAP):
     network_coordinates = [
         list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
     ]
-    passengers_at_time = [0]*10000
+    passengers_at_time = [0]*MAX_TIME_SIMULATED
     stations = [set() for _ in range(STATION_NUMBER)]
     passengers = generate_passengers_test(network_routes, stations, passengers_at_time)
     bus_routes = generate_buses(network_routes, network_frequencies, network_coordinates, CAP)
@@ -33,7 +35,7 @@ def simulate(coordinates, network_frequencies, network_routes, CAP):
                 passengers.remove(passenger)
                 continue
             stations[passenger.current_station].add(passenger)
-            t_time += 5*60
+            t_time += TRANSFER_TIME
         bus.capacity += len(bus.stations_map[bus.current_node])
         on_bus -= len(bus.stations_map[bus.current_node])
         bus.stations_map[bus.current_node] = []
