@@ -9,14 +9,11 @@ TRANSFER_TIME = 5*60
 
 station_passengers_history = []
 time_history = []
-def simulate(coordinates, network_frequencies, network_routes, CAP):    
-    network_coordinates = [
-        list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
-    ]
+def simulate(network_frequencies, network_routes, CAP):    
     passengers_at_time = [0]*MAX_TIME_SIMULATED
     stations = [set() for _ in range(STATION_NUMBER)]
     passengers = generate_passengers_test(network_routes, stations, passengers_at_time)
-    bus_routes = generate_buses(network_routes, network_frequencies, network_coordinates, CAP)
+    bus_routes = generate_buses(network_routes, network_frequencies, CAP)
     passengers_pref_time = list(itertools.accumulate(passengers_at_time))
     print(len(passengers))
     t_s = datetime.datetime.now()
@@ -104,8 +101,7 @@ network_routes = [[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]]
 network_frequencies = [68.2, 19.900000000000002, 15.210936746793037, 5.446410882717701] 
 
 """ network_routes = [[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]]
-network_frequencies = [68.5, 19.900000000000002, 16.45525002610718]
-simulation_time = 5580  """
+network_frequencies = [68.5, 19.900000000000002, 16.45525002610718] """
 
 """ network_routes = [[0,1,2,5,7,9,10]]
 network_frequencies = [10] 
@@ -113,4 +109,4 @@ simulation_time = 5580
 """
 
 
-simulate(coordinates, network_frequencies, network_routes, CAP)
+simulate(network_frequencies, network_routes, CAP)
