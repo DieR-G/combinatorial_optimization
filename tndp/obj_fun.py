@@ -278,7 +278,10 @@ def assign(routes, frequencies):
 #print(te-ts)
 
 #assign([[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]], [10, 10, 10])
+ts = datetime.datetime.now()
 assign([[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]], [10,10,10,10])
+te = datetime.datetime.now()
+print(te - ts)
 #assign([[9,13,12]], [10])
 #assign([[0,1,2,5,7,9,10,12]],[1])
 #assign([[0,1,2,5,7,9,10]], [10])
