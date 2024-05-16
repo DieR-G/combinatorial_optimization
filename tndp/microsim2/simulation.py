@@ -27,8 +27,9 @@ def simulate(network_frequencies, network_routes, CAP):
         nonlocal on_bus, t_time, stations
         for passenger in bus.stations_map[bus.current_node]:
             passenger.current_bus = "-1"
-            passenger.current_station = passenger.path.pop()
-            if len(passenger.path) == 0:
+            passenger.current_station = passenger.path[passenger.path_pos]
+            passenger.path_pos -= 1
+            if passenger.path_pos < 0:
                 passengers.remove(passenger)
                 continue
             stations[passenger.current_station].add(passenger)
@@ -45,11 +46,11 @@ def simulate(network_frequencies, network_routes, CAP):
                 continue
             if bus.capacity > 0:
                 to = bus.route[bus.route_position:] if bus.dir > 0 else bus.route[:bus.route_position + 1]
-                if passenger.path[-1] in to:
+                if passenger.path[passenger.path_pos] in to:
                     passenger.current_bus = bus.id
                     bus.capacity -= 1
                     on_bus += 1
-                    bus.stations_map[passenger.path[-1]].append(passenger)
+                    bus.stations_map[passenger.path[passenger.path_pos]].append(passenger)
                     to_remove.append(passenger)  # Add passenger to the removal list
             else:
                 break

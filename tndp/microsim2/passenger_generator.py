@@ -1,4 +1,4 @@
-from route_assignation import get_travel_routes, get_first_travel_route, get_travel_routes_prop
+from route_assignation import get_travel_routes
 import copy
 import math
 import numpy as np
@@ -26,6 +26,7 @@ class Passenger:
         self.active = True
         self.arrival_time = arrival_time
         self.path=travel_path
+        self.path_pos = len(self.path) - 1
         self.current_bus="-1"
         self.start_station = start_station
         self.current_station= self.start_station
@@ -42,15 +43,6 @@ class Passenger:
     def __hash__(self):
         return hash(self.id)
     
-def initialize_start_matrix(routes):
-    st = [[0 for _ in range(len(demand_matrix))] for _ in range(len(demand_matrix))]
-    for p, v in get_first_travel_route(routes).items():
-        if p[0] >= len(demand_matrix) or p[1] >= len(demand_matrix):
-            break
-        st[p[0]][p[1]] = v
-    global start_time_matrix
-    start_time_matrix = st
-
 def generate_passengers_test(routes, stations_set, passengers_at_time):
     passenger_set = set()
     travels = get_travel_routes(routes)
@@ -66,54 +58,10 @@ def generate_passengers_test(routes, stations_set, passengers_at_time):
             dt = math.ceil(3600/demand_matrix[i][j])
             for k in range(total_users):
                 passengers_at_time[arriving_time] += 1
-                new_passenger = Passenger(pass_idx, arriving_time, copy.deepcopy(travels[i][j][k%len(travels[i][j])]), i, j)
+                new_passenger = Passenger(pass_idx, arriving_time, travels[i][j][k%len(travels[i][j])], i, j)
                 stations_set[i].add(new_passenger)
                 passenger_set.add(new_passenger)
                 arriving_time += dt
                 pass_idx += 1
     
     return passenger_set
-
-def generate_passengers_test_prop(routes, frequencies):
-    passenger_vector = []
-    travels = get_travel_routes_prop(routes, frequencies)
-    for i in range(len(demand_matrix)):
-        for j in range(len(demand_matrix)):
-            if len(travels[i][j]) == 0:
-                continue
-            if demand_matrix[i][j] == 0:
-                continue
-            for path, proportion in travels[i][j]:
-                total_users = math.ceil(demand_matrix[i][j]*proportion)
-                for _ in range(total_users):
-                    new_passenger = Passenger(0, copy.deepcopy(path), i, j)
-                    passenger_vector.append(new_passenger)
-    return passenger_vector
-
-def generate_passengers(simulation_time_left, routes):
-    passenger_vector=[]
-    initialize_start_matrix(routes)
-    travels = get_travel_routes(routes)
-    for i in range(len(demand_matrix)):
-        for j in range(len(demand_matrix[i])):
-            if len(travels[i][j]) == 0:
-                continue
-            if demand_matrix[i][j] == 0: continue
-            total_users=demand_matrix[i][j]
-            time_delta=3600/total_users #Segundos por pasajero
-            arrival_time=0 
-            for k in range(total_users):
-                arrival_time+=time_delta
-                if arrival_time >= start_time_matrix[i][j]*60:
-                    new_passenger = Passenger(int(arrival_time), copy.deepcopy(travels[i][j][k%len(travels[i][j])]), i, j)
-                    assert(len(new_passenger.path) > 0)
-                    passenger_vector.append(new_passenger)
-                    
-            remaining_users=int(simulation_time_left/time_delta)
-            for k in range(remaining_users):
-                arrival_time+=time_delta
-                new_passenger = Passenger(int(arrival_time), copy.deepcopy(travels[i][j][k%len(travels[i][j])]), i, j)
-                assert(len(new_passenger.path) > 0)
-                passenger_vector.append(new_passenger)
-
-    return passenger_vector
