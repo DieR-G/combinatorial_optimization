@@ -26,6 +26,7 @@ class Bus:
         self.current_node = route[0]
         self.state = "on_station"
         self.pos = 0
+        self.stop_time = 0
         self.starting_time = starting_time
         self.node_time_map, self.index_time_list = self.node_at_time()
         self.total_time = 60*total_time
