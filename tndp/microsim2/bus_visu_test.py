@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.cm import get_cmap
-from bus_generator import generate_buses, generate_bus_test
+from bus_generator import generate_buses
 
 # Function to initialize the plot
 def setup_plot():
@@ -36,7 +36,7 @@ network_frequencies = [68.2, 19.9, 15.21, 5.446]
 network_coordinates = [
     list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
 ]
-buses = generate_buses(network_routes, network_frequencies, network_coordinates, 50)
+buses = generate_buses(network_routes, network_frequencies, 50)
 
 fig, ax = setup_plot()
 cmap = get_cmap('viridis', len(buses))  # Get a colormap with as many colors as there are routes

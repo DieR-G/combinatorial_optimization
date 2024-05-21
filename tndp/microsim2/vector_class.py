@@ -27,3 +27,5 @@ class Vector:
     
     def mult(self, m):
         return Vector((self.x*m, self.y*m))
+    def to_tup(self):
+        return (self.x, self.y)
