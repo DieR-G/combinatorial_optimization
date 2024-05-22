@@ -53,9 +53,7 @@ ax.set_xlim(min(x[0] for x in positions), max(x[0] for x in positions))
 ax.set_ylim(min(x[1] for x in positions), max(x[1] for x in positions))
 
 # Create a list of plot objects for each bus
-bus_dots = [ax.plot([], [], 'o', markersize=1)[0] for _ in range(n_buses)]
-
-wt = 0
+bus_dots = [ax.plot([], [], 'o', markersize=0.5)[0] for _ in range(n_buses)]
 
 def init():
     for dot in bus_dots:
@@ -63,12 +61,11 @@ def init():
     return bus_dots
 
 def update(frame):
-    global wt
     for b in buses:
         if b.stop_time > 0:
             b.stop_time -= 1
             continue
-        if space[b.pos + 1] == 0 and space[b.pos + 2] == 0 and space[b.pos + 3] == 0 and space[b.pos + 4] == 0:
+        if space[b.pos + 1] == 0:
             space[b.pos] = 0
             b.move()
             space[b.pos] = 1

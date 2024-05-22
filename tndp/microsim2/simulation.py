@@ -45,7 +45,7 @@ def simulate(network_frequencies, network_routes, CAP):
             if passenger.arrival_time > t:
                 continue
             if bus.capacity > 0:
-                to = bus.route[bus.route_position:] if bus.dir > 0 else bus.route[:bus.route_position + 1]
+                to = bus.route[bus.route_position:] if bus.direction > 0 else bus.route[:bus.route_position + 1]
                 if passenger.path[passenger.path_pos] in to:
                     passenger.current_bus = bus.id
                     bus.capacity -= 1

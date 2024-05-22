@@ -1,124 +1,188 @@
-network = [
-    [(1, 8)], 
-    [(2, 2), (3, 3), (4, 6), (0, 8)],
-    [(1, 2), (5, 3)], 
-    [(1, 3), (4, 4), (5, 4), (11, 10)], 
-    [(3, 4), (1, 6)], 
-    [(7, 2), (2, 3), (14, 3), (3, 4)], 
-    [(14, 2), (9, 7)], 
-    [(5, 2), (14, 2), (9, 8)], 
-    [(14, 8)], 
-    [(10, 5), (6, 7), (7, 8), (13, 8), (12, 10)], 
-    [(12, 5), (9, 5), (11, 10)], 
-    [(3, 10), (10, 10)], 
-    [(13, 2), (10, 5), (9, 10)], 
-    [(12, 2), (9, 8)], 
-    [(7, 2), (6, 2), (5, 3), (8, 8)]
-]
-
 class Bus:
-    def __init__(self, id, route, capacity, starting_time, total_time):
+    def __init__(self, id, route, capacity, starting_time, total_time, node_time_map, index_time_list):
+        """
+        Initialize a Bus instance
+
+        ### Parameters:
+        - `id` (int): Identifier of the bus
+        - `route` (list): List of nodes representing the bus route
+        - `capacity` (int): Capacity of the bus
+        - `starting_time` (int): The starting time of the bus in seconds
+        - `total_time` (int): Total time for one round trip in minutes
+        - `node_time_map` (dict): Dictionary mapping positions to node times
+        - `index_time_list` (list): List of times for each index position on the route
+        """
         self.id = id
         self.route = route
         self.capacity = capacity
         self.route_position = 1
-        self.dir = 1
+        self.direction = 1
         self.current_node = route[0]
         self.state = "on_station"
-        self.pos = 0
+        self.position = 0
         self.stop_time = 0
         self.starting_time = starting_time
-        self.node_time_map, self.index_time_list = self.node_at_time()
-        self.total_time = 60*total_time
-        self.pos_index = {v:e for e,v in enumerate(self.route)}
-        self.set_pos_at_time(self.starting_time)
-        self.stations_map = {i:[] for i in self.route}
-        
+        self.node_time_map = node_time_map
+        self.index_time_list = index_time_list
+        self.total_time = 60 * total_time  # Convert total_time to seconds
+        self._set_position_at_time(self.starting_time)
+        self.stations_map = {i: [] for i in self.route}
+
     def __str__(self):
-        str = f"Bus {self.id} at:{self.current_node}, capacity: {self.capacity}"
-        return str
-    
+        """
+        String representation of the Bus
+
+        ### Returns:
+        - `str`: A string describing the current state of the bus
+        """
+        return f"Bus {self.id} at: {self.current_node}, capacity: {self.capacity}"
+
     def move(self):
-        self.pos += self.dir
-        if self.pos in self.node_time_map:
+        """
+        Move the bus one position in its current direction
+        """
+        self.position += self.direction
+        if self.position in self.node_time_map:
             self.state = "on_station"
-            self.current_node = self.node_time_map[self.pos]
-            self.update_pos()
+            self.current_node = self.node_time_map[self.position]
+            self._update_position()
         else:
             self.state = "on_road"
-    
-    def update_pos(self):
-        if(self.route_position + self.dir >= len(self.route) or self.route_position + self.dir < 0):
-            self.dir *= -1
-        self.route_position += self.dir
-        
-    def in_bounds(self, val):
-        if val < 0:
-            return 0
-        if val >= len(self.route):
-            return len(self.route) - 1
-        return val
-    
-    def get_last_pos(self):
-        return self.route[self.in_bounds(self.route_position - self.dir)]
-    
-    def get_next_pos(self):
-        return self.route[self.in_bounds(self.route_position)]
-    
-    def get_next_coord(self):
-        pass
-        
-    def get_last_coord(self):
-        pass
-    
-    def binary_search(self, f):
-        n = len(self.route) - 1
-        l, h = 0, n
-        while l < h:
-            m = (h+l)//2
-            if f(m):
-                h = m
+
+    def _update_position(self):
+        """
+        Update the bus position within the route
+
+        Change direction if necessary.
+        """
+        if self.route_position + self.direction >= len(self.route) or self.route_position + self.direction < 0:
+            self.direction *= -1
+        self.route_position += self.direction
+
+    def _in_bounds(self, val):
+        """
+        Ensure a value is within the bounds of the route list
+
+        ### Parameters:
+        - `val` (int): The value to check
+
+        ### Returns:
+        - `int`: The bounded value
+        """
+        return max(0, min(val, len(self.route) - 1))
+
+    def get_last_node(self):
+        """
+        Get the last node on the route
+
+        ### Returns:
+        - `object`: The last node
+        """
+        return self.route[self._in_bounds(self.route_position - self.direction)]
+
+    def get_next_node(self):
+        """
+        Get the next node on the route
+
+        ### Returns:
+        - `object`: The next node
+        """
+        return self.route[self._in_bounds(self.route_position)]
+
+    def get_last_index(self):
+        """
+        Get the last index on the route
+
+        ### Returns:
+        - `int`: The last index
+        """
+        return self._in_bounds(self.route_position - self.direction)
+
+    def get_next_index(self):
+        """
+        Get the next index on the route
+
+        ### Returns:
+        - `int`: The next index
+        """
+        return self._in_bounds(self.route_position)
+
+    def get_arc(self):
+        """
+        Get the current arc (last and next nodes)
+
+        ### Returns:
+        - `tuple`: A tuple containing the last and next nodes
+        """
+        return self.get_last_node(), self.get_next_node()
+
+    def get_arc_position(self):
+        """
+        Get the position within the current arc
+
+        ### Returns:
+        - `int`: The position within the arc
+        """
+        if self.direction > 0:
+            return self.position - self.index_time_list[self.get_last_index()]
+        else:
+            return self.position - 2 * self.total_time + self.index_time_list[self.get_last_index()]
+
+    def _binary_search(self, condition):
+        """
+        Perform a binary search based on the given condition
+
+        ### Parameters:
+        - `condition` (function): A lambda function to evaluate the condition
+
+        ### Returns:
+        - `int`: The index satisfying the condition
+        """
+        low, high = 0, len(self.route) - 1
+        while low < high:
+            mid = (low + high) // 2
+            if condition(mid):
+                high = mid
             else:
-                l = m + 1
-        return l
-    
-    def get_pos_at_time(self, t):
+                low = mid + 1
+        return low
+
+    def _get_position_at_time(self, t):
+        """
+        Determine the position of the bus at a given time
+
+        ### Parameters:
+        - `t` (int): The time in seconds
+
+        ### Returns:
+        - `tuple`: A tuple of (current index, next index)
+        """
         if t >= self.total_time:
             t -= self.total_time
-            idx = self.binary_search(lambda x: self.index_time_list[-1] - self.index_time_list[x] < t)
-            self.dir = -1
+            idx = self._binary_search(lambda x: self.index_time_list[-1] - self.index_time_list[x] < t)
+            self.direction = -1
         else:
-            idx = self.binary_search(lambda x: self.index_time_list[x] > t)
+            idx = self._binary_search(lambda x: self.index_time_list[x] > t)
             idx -= 1
-        next_idx = idx+self.dir
+        next_idx = idx + self.direction
         return idx, next_idx
-    
-    def set_pos_at_time(self, t):
-        t %= 2*self.total_time 
-        at, next = self.get_pos_at_time(t)
-        self.route_position = next
+
+    def _set_position_at_time(self, t):
+        """
+        Set the bus position based on a given time
+
+        ### Parameters:
+        - `t` (int): The time in seconds
+        """
+        t %= 2 * self.total_time
+        at_idx, next_idx = self._get_position_at_time(t)
+        self.route_position = next_idx
         self.state = "on_station"
         if t in self.node_time_map:
-            self.current_node = self.route[at]
-        elif 2*self.total_time - t in self.node_time_map:
-            self.current_node = self.route[next]
-            self.update_pos()
+            self.current_node = self.route[at_idx]
+        elif 2 * self.total_time - t in self.node_time_map:
+            self.current_node = self.route[next_idx]
+            self._update_position()
         else:
             self.state = "on_road"
-        if self.dir > 0:
-            self.pos = t
-        else:
-            self.pos = 2*self.total_time - t
-                 
-    def node_at_time(self):
-        node_time_map = {}
-        node_time_list = [0]*len(self.route)
-        current_node = self.route[0]
-        t = 0
-        for idx, node in enumerate(self.route):
-            t += next((c for a,c in network[node] if a == current_node), 0)
-            node_time_map[t*60] = node
-            node_time_list[idx] = t*60
-            current_node = node
-        return node_time_map, node_time_list
-    
+        self.position = t if self.direction > 0 else 2 * self.total_time - t
