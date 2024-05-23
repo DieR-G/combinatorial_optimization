@@ -21,17 +21,15 @@ network = [
     ]
 
 def generate_buses(routes, frequencies, capacity):
-    bus_factory = BusFactory(network)
     buses = [[] for _ in range(len(routes))]
     for k in range(len(routes)):
-        route_time = compute_time(routes[k][0], routes[k][-1], routes[k])
-        node_time_map, index_time_list = bus_factory.node_at_time(routes[k])
-        bus_number = math.ceil(frequencies[k] * route_time / 30)
+        bus_factory = BusFactory(network, routes[k])
+        bus_number = math.ceil(frequencies[k] * bus_factory.total_time / 30)
         time_delta = math.ceil(3600 / frequencies[k])
         start_time = 0
         for i in range(bus_number):
             new_bus = bus_factory.create_bus(str(k) + str(i), routes[k],
-                                             capacity, start_time, route_time, node_time_map, index_time_list)
+                                             capacity, start_time)
             buses[k].append(new_bus)
             start_time += time_delta
     return buses

@@ -1,5 +1,5 @@
 import numpy as np
-from bus_class import Bus
+from bus_factory import BusFactory
 
 def interpolate_coordinates(start, end, num_points):
     lon_values = np.linspace(start[0], end[0], num_points + 1)
@@ -51,4 +51,6 @@ network_coordinates = [
     list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
 ]
 st = 0
-test_bus = Bus('1', [0, 1, 2, 5, 7, 9, 10, 12], 50, st, 1980)
+bus_factory = BusFactory(network)
+test_bus = bus_factory.create_bus('1', network_routes[0], 50, st, 1980)
+print(test_bus.get_arc_position())
