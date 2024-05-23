@@ -50,7 +50,7 @@ network_routes = [[0, 1, 2, 5, 7, 9, 10, 12]]
 network_coordinates = [
     list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
 ]
-st = 0
-bus_factory = BusFactory(network)
-test_bus = bus_factory.create_bus('1', network_routes[0], 50, st, 1980)
-print(test_bus.get_arc_position())
+st = 1980+5*60+5*60+8*60
+bus_factory = BusFactory(network, network_routes[0])
+test_bus = bus_factory.create_bus('1', 50, st)
+print(test_bus.get_arc(), test_bus.get_arc_position())

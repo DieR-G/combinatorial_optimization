@@ -126,7 +126,7 @@ class Bus:
         if self.direction > 0:
             return self.position - self.index_time_list[self.get_last_index()]
         else:
-            return self.position - 2 * self.total_time + self.index_time_list[self.get_last_index()]
+            return self.position
 
     def _binary_search(self, condition):
         """

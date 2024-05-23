@@ -28,7 +28,7 @@ def generate_buses(routes, frequencies, capacity):
         time_delta = math.ceil(3600 / frequencies[k])
         start_time = 0
         for i in range(bus_number):
-            new_bus = bus_factory.create_bus(str(k) + str(i), routes[k],
+            new_bus = bus_factory.create_bus(str(k) + str(i),
                                              capacity, start_time)
             buses[k].append(new_bus)
             start_time += time_delta

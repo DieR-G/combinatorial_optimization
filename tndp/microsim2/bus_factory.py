@@ -19,6 +19,6 @@ class BusFactory:
             current_node = node
         return node_time_map, index_time_list
 
-    def create_bus(self, id, route, capacity, starting_time):
+    def create_bus(self, id, capacity, starting_time):
         node_time_map, index_time_list = self.node_at_time()
-        return Bus(id, route, capacity, starting_time, self.total_time, node_time_map, index_time_list)
+        return Bus(id, self.route, capacity, starting_time, self.total_time, node_time_map, index_time_list)
