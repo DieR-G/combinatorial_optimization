@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 from bus_generator import generate_buses_on_space
 
 def interpolate_coordinates(start, end, num_points):
@@ -52,7 +54,6 @@ arc_positions = {
     for j, weight in arc
 }
 
-
 network_routes = [[0, 1, 2, 5, 7, 9, 10, 12]]
 
 network_coordinates = [
@@ -64,9 +65,6 @@ network_frequencies = [68.2, 19.900000000000002, 15.210936746793037, 5.446410882
 
 bus_routes = generate_buses_on_space(network_routes, network_frequencies, 50, arc_positions)
 
-import matplotlib.pyplot as plt
-import numpy as np
-
 # Function to draw the buses as points on the map
 def draw_buses(bus_routes, arc_coordinates):
     fig, ax = plt.subplots()
@@ -76,18 +74,36 @@ def draw_buses(bus_routes, arc_coordinates):
         lons, lats = zip(*coordinates)
         ax.plot(lons, lats, 'k-', linewidth=0.5, alpha=0.6)  # Plot the route as a thin line
 
-    # Draw the buses
-    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']  # Different colors for different routes
-    for route_idx, route in enumerate(bus_routes):
-        color = colors[route_idx % len(colors)]
-        for bus in route:
-            arc = bus.get_arc()
-            if arc in arc_coordinates:
-                coordinates = arc_coordinates[arc]
-                position_within_arc = bus.get_arc_position()
-                position = min(max(0, position_within_arc), len(coordinates) - 1)  # Ensure index is within bounds
-                lon, lat = coordinates[position]
-                ax.plot(lon, lat, marker='o', markersize=2, color=color)  # Plot the bus as a small point
+    # Initialize plots for buses
+    buses_plots = []
+    colors = ['r', 'g', 'b', 'c']  # Different colors for different routes
+    for color in colors:
+        buses_plot, = ax.plot([], [], 'o', markersize=2, color=color)
+        buses_plots.append(buses_plot)
+
+    def init():
+        for buses_plot in buses_plots:
+            buses_plot.set_data([], [])
+        return buses_plots
+
+    def update(frame):
+        for route_idx, route in enumerate(bus_routes):
+            lon_data = []
+            lat_data = []
+            for bus in route:
+                arc = bus.get_arc()
+                if arc in arc_coordinates:
+                    coordinates = arc_coordinates[arc]
+                    position_within_arc = bus.get_arc_position()
+                    position = min(max(0, position_within_arc), len(coordinates) - 1)  # Ensure index is within bounds
+                    lon, lat = coordinates[position]
+                    lon_data.append(lon)
+                    lat_data.append(lat)
+                bus.move()  # Move the bus for the next frame
+            buses_plots[route_idx].set_data(lon_data, lat_data)
+        return buses_plots
+
+    ani = FuncAnimation(fig, update, frames=range(100), init_func=init, blit=True, interval=100)
 
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
