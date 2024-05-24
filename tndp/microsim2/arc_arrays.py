@@ -40,17 +40,24 @@ network = [
     [(7, 2), (6, 2), (5, 3), (8, 8)]
 ]
 
-edge_coordinates = { 
+arc_coordinates = { 
     (i, j): interpolate_coordinates(coordinates[i], coordinates[j], weight)
     for i, connections in enumerate(network)
     for j, weight in connections
 }
+
+arc_positions = {
+    (i, j): [0]*weight*60
+    for i, arc in enumerate(network)
+    for j, weight in arc
+}
+
 network_routes = [[0, 1, 2, 5, 7, 9, 10, 12]]
 
 network_coordinates = [
     list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
 ]
-st = 1980+5*60+5*60+8*60
+st = 480
 bus_factory = BusFactory(network, network_routes[0])
 test_bus = bus_factory.create_bus('1', 50, st)
 print(test_bus.get_arc(), test_bus.get_arc_position())

@@ -123,10 +123,7 @@ class Bus:
         ### Returns:
         - `int`: The position within the arc
         """
-        if self.direction > 0:
-            return self.position - self.index_time_list[self.get_last_index()]
-        else:
-            return self.position
+        return self.direction*(self.position - self.index_time_list[self.get_last_index()])
 
     def _binary_search(self, condition):
         """
