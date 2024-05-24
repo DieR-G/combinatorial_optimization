@@ -27,7 +27,8 @@ class Bus:
         self.total_time = 60 * total_time  # Convert total_time to seconds
         self._set_position_at_time()
         self.stations_map = {i: [] for i in self.route}
-
+        self.previous_state = None
+        
     def __str__(self):
         """
         String representation of the Bus
@@ -35,12 +36,20 @@ class Bus:
         ### Returns:
         - `str`: A string describing the current state of the bus
         """
-        return f"Bus {self.id} at: {self.current_node}, capacity: {self.capacity}"
+        return f"Bus {self.id} at: {self.position}, capacity: {self.capacity}"
 
     def move(self):
         """
         Move the bus one position in its current direction
         """
+        self.previous_state = {
+            "position": self.position,
+            "route_position": self.route_position,
+            "direction": self.direction,
+            "current_node": self.current_node,
+            "state": self.state
+        }
+        
         self.position += self.direction
         if self.position in self.node_time_map:
             self.state = "on_station"
@@ -49,18 +58,17 @@ class Bus:
         else:
             self.state = "on_road"
 
-    def move_backwards(self):
-        """
-        Move the bus one position in the oppposite direction
-        """
-        self.position -= 1
-        self.position %= self.total_time
-        if self.position in self.node_time_map:
-            self.state = "on_station"
-            self.current_node = self.node_time_map[self.position]
-            self._update_position()
+    def undo_move(self):
+        if self.previous_state:
+            self.position = self.previous_state["position"]
+            self.route_position = self.previous_state["route_position"]
+            self.direction = self.previous_state["direction"]
+            self.current_node = self.previous_state["current_node"]
+            self.state = self.previous_state["state"]
+            self.previous_state = None  # Clear the previous state after undoing
         else:
-            self.state = "on_road"
+            print("No move to undo")
+
     def _update_position(self):
         """
         Update the bus position within the route

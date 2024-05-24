@@ -54,12 +54,6 @@ arc_positions = {
     for j, weight in arc
 }
 
-network_routes = [[0, 1, 2, 5, 7, 9, 10, 12]]
-
-network_coordinates = [
-    list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
-]
-
 network_routes = [[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]]
 network_frequencies = [68.2, 19.900000000000002, 15.210936746793037, 5.446410882717701]
 
