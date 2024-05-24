@@ -25,7 +25,7 @@ class Bus:
         self.node_time_map = node_time_map
         self.index_time_list = index_time_list
         self.total_time = 60 * total_time  # Convert total_time to seconds
-        self._set_position_at_time(self.starting_time)
+        self._set_position_at_time()
         self.stations_map = {i: [] for i in self.route}
 
     def __str__(self):
@@ -49,6 +49,18 @@ class Bus:
         else:
             self.state = "on_road"
 
+    def move_backwards(self):
+        """
+        Move the bus one position in the oppposite direction
+        """
+        self.position -= 1
+        self.position %= self.total_time
+        if self.position in self.node_time_map:
+            self.state = "on_station"
+            self.current_node = self.node_time_map[self.position]
+            self._update_position()
+        else:
+            self.state = "on_road"
     def _update_position(self):
         """
         Update the bus position within the route
@@ -164,13 +176,14 @@ class Bus:
         next_idx = idx + self.direction
         return idx, next_idx
 
-    def _set_position_at_time(self, t):
+    def _set_position_at_time(self):
         """
         Set the bus position based on a given time
 
         ### Parameters:
         - `t` (int): The time in seconds
         """
+        t = self.starting_time
         t %= 2 * self.total_time
         at_idx, next_idx = self._get_position_at_time(t)
         self.route_position = next_idx

@@ -1,5 +1,5 @@
 import numpy as np
-from bus_factory import BusFactory
+from bus_generator import generate_buses_on_space
 
 def interpolate_coordinates(start, end, num_points):
     lon_values = np.linspace(start[0], end[0], num_points + 1)
@@ -41,23 +41,58 @@ network = [
 ]
 
 arc_coordinates = { 
-    (i, j): interpolate_coordinates(coordinates[i], coordinates[j], weight)
+    (i, j): interpolate_coordinates(coordinates[i], coordinates[j], weight*60)
     for i, connections in enumerate(network)
     for j, weight in connections
 }
 
 arc_positions = {
-    (i, j): [0]*weight*60
+    (i, j): [False]*weight*60
     for i, arc in enumerate(network)
     for j, weight in arc
 }
+
 
 network_routes = [[0, 1, 2, 5, 7, 9, 10, 12]]
 
 network_coordinates = [
     list(map(lambda x: tuple(coordinates[x]), r)) for r in network_routes
 ]
-st = 480
-bus_factory = BusFactory(network, network_routes[0])
-test_bus = bus_factory.create_bus('1', 50, st)
-print(test_bus.get_arc(), test_bus.get_arc_position())
+
+network_routes = [[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]]
+network_frequencies = [68.2, 19.900000000000002, 15.210936746793037, 5.446410882717701]
+
+bus_routes = generate_buses_on_space(network_routes, network_frequencies, 50, arc_positions)
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Function to draw the buses as points on the map
+def draw_buses(bus_routes, arc_coordinates):
+    fig, ax = plt.subplots()
+
+    # Draw the bus routes
+    for arc, coordinates in arc_coordinates.items():
+        lons, lats = zip(*coordinates)
+        ax.plot(lons, lats, 'k-', linewidth=0.5, alpha=0.6)  # Plot the route as a thin line
+
+    # Draw the buses
+    colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']  # Different colors for different routes
+    for route_idx, route in enumerate(bus_routes):
+        color = colors[route_idx % len(colors)]
+        for bus in route:
+            arc = bus.get_arc()
+            if arc in arc_coordinates:
+                coordinates = arc_coordinates[arc]
+                position_within_arc = bus.get_arc_position()
+                position = min(max(0, position_within_arc), len(coordinates) - 1)  # Ensure index is within bounds
+                lon, lat = coordinates[position]
+                ax.plot(lon, lat, marker='o', markersize=2, color=color)  # Plot the bus as a small point
+
+    ax.set_xlabel('Longitude')
+    ax.set_ylabel('Latitude')
+    ax.set_title('Bus Positions on Routes')
+    plt.show()
+
+# Assuming bus_routes and arc_coordinates are defined as per the provided code
+draw_buses(bus_routes, arc_coordinates)
