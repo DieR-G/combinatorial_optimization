@@ -47,7 +47,7 @@ def generate_buses_on_space(routes, frequencies, capacity, arcs):
             current_pos = new_bus.get_arc_position()
             while(arcs[current_arc][current_pos]):
                 new_bus.starting_time -= 1
-                new_bus.starting_time %= new_bus.total_time
+                new_bus.starting_time %= 2*new_bus.total_time
                 new_bus._set_position_at_time()
                 current_arc = new_bus.get_arc()
                 current_pos = new_bus.get_arc_position()

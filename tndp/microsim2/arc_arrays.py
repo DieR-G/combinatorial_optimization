@@ -70,7 +70,7 @@ def draw_buses(bus_routes, arc_coordinates):
 
     # Initialize plots for buses
     buses_plots = []
-    colors = ['r', 'g', 'b', 'c']  # Different colors for different routes
+    colors = ['b', 'm', 'r', 'y']  # Different colors for different routes
     for color in colors:
         buses_plot, = ax.plot([], [], 'o', markersize=2, color=color)
         buses_plots.append(buses_plot)
@@ -93,11 +93,24 @@ def draw_buses(bus_routes, arc_coordinates):
                     lon, lat = coordinates[position]
                     lon_data.append(lon)
                     lat_data.append(lat)
-                bus.move()  # Move the bus for the next frame
+                if bus.stop_time > 0:
+                    bus.stop_time -= 1
+                    continue
+                arc_positions[arc][bus.get_arc_position()] = False
+                bus.move()
+                if arc_positions[bus.get_arc()][bus.get_arc_position()]:
+                    bus.undo_move()
+                    arc_positions[bus.get_arc()][bus.get_arc_position()] = True
+                    continue
+                arc_positions[bus.get_arc()][bus.get_arc_position()] = True
+                if bus.state == 'on_station':
+                    bus.stop_time = 30
+
+
             buses_plots[route_idx].set_data(lon_data, lat_data)
         return buses_plots
 
-    ani = FuncAnimation(fig, update, frames=range(100), init_func=init, blit=True, interval=100)
+    ani = FuncAnimation(fig, update, frames=range(100), init_func=init, blit=True, interval=10)
 
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
