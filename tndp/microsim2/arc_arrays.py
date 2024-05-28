@@ -59,6 +59,21 @@ network_frequencies = [68.2, 19.900000000000002, 15.210936746793037, 5.446410882
 
 bus_routes = generate_buses_on_space(network_routes, network_frequencies, 50, arc_positions)
 
+def move_bus_on_arcs(bus, arc_positions):
+    arc = bus.get_arc()
+    if bus.stop_time > 0:
+        bus.stop_time -= 1
+        return
+    arc_positions[arc][bus.get_arc_position()] = False
+    bus.move()
+    if arc_positions[bus.get_arc()][bus.get_arc_position()]:
+        bus.undo_move()
+        arc_positions[bus.get_arc()][bus.get_arc_position()] = True
+        return
+    arc_positions[bus.get_arc()][bus.get_arc_position()] = True
+    if bus.state == 'on_station':
+        bus.stop_time = 30
+
 # Function to draw the buses as points on the map
 def draw_buses(bus_routes, arc_coordinates):
     fig, ax = plt.subplots()
@@ -93,18 +108,7 @@ def draw_buses(bus_routes, arc_coordinates):
                     lon, lat = coordinates[position]
                     lon_data.append(lon)
                     lat_data.append(lat)
-                if bus.stop_time > 0:
-                    bus.stop_time -= 1
-                    continue
-                arc_positions[arc][bus.get_arc_position()] = False
-                bus.move()
-                if arc_positions[bus.get_arc()][bus.get_arc_position()]:
-                    bus.undo_move()
-                    arc_positions[bus.get_arc()][bus.get_arc_position()] = True
-                    continue
-                arc_positions[bus.get_arc()][bus.get_arc_position()] = True
-                if bus.state == 'on_station':
-                    bus.stop_time = 30
+                    move_bus_on_arcs(bus, arc_positions)
 
 
             buses_plots[route_idx].set_data(lon_data, lat_data)
