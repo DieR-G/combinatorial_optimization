@@ -55,7 +55,7 @@ arc_positions = {
 }
 
 network_routes = [[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]]
-network_frequencies = [68.2, 19.900000000000002, 15.210936746793037, 5.446410882717701]
+network_frequencies = [680.2, 190.900000000000002, 15.210936746793037, 5.446410882717701]
 
 bus_routes = generate_buses_on_space(network_routes, network_frequencies, 50, arc_positions)
 
@@ -72,7 +72,7 @@ def move_bus_on_arcs(bus, arc_positions):
         return
     arc_positions[bus.get_arc()][bus.get_arc_position()] = True
     if bus.state == 'on_station':
-        bus.stop_time = 30
+        bus.stop_time = 300
 
 # Function to draw the buses as points on the map
 def draw_buses(bus_routes, arc_coordinates):
