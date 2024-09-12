@@ -2,10 +2,15 @@ from collections import defaultdict
 import numpy as np
 import datetime
 import json
-
-DEMAND_MATRIX_FILE = "obj_func_data/Mandl/demand_matrix.json"
-ROAD_NETWORK_FILE = "obj_func_data/Mandl/network.json"
-CAP = 40*1.25
+import os
+print(os.getcwd())
+DEMAND_MATRIX_FILE = "tndp/obj_func_data/Transmilenio/instance6/demand_matrix.json"
+ROAD_NETWORK_FILE = "tndp/obj_func_data/Transmilenio/instance6/network.json"
+ROUTES_FILE = "tndp/obj_func_data/Transmilenio/instance6/routes.json"
+STOPS_FILE = "tndp/obj_func_data/Transmilenio/instance6/stops.json"
+CAPACITIES_FILE = "tndp/obj_func_data/Transmilenio/instance6/capacities.json"
+FREQUENCIES_FILE = "tndp/obj_func_data/Transmilenio/instance6/frequencies.json"
+CAP = 250
 TRANSFER_TIME = 5
 ZERO_TRANSFER_MAX = 1.5
 ONE_TRANSFER_MAX = 1.1
@@ -44,7 +49,7 @@ def compute_time(i, j, r):
     start, end = sorted((r.index(i), r.index(j)))
     edges = [(network[r[m]], r[m + 1]) for m in range(start, end)]
     cost = sum(list(map(lambda p: next((c for a, c in p[0] if a == p[1]), (0, 0)), edges)))
-    return cost
+    return cost/60
 
 def get_min_time(i, j, search_routes, routes):
     return min(map(lambda x: compute_time(i,j,routes[x]), search_routes))
@@ -211,13 +216,25 @@ def compute_2_time(i, j, Ri, Rj, routes, input_freq, arcs):
 
     return tt, wt, trt
 
-def update_frequencies(frequencies, arcs):
+def update_frequencies(frequencies, arcs, capacities):
+    """ triplets = []
+    for arc, value in arcs[0].items():
+        triplets.append((arc, value))
+    triplets.sort(key=lambda x: x[0][0] + x[0][1])
+    row = ""
+    with open('arc_flows.csv', 'w') as file:
+        for i, t in enumerate(triplets):
+            if i > 0 and i % 2 == 0:
+                file.write(row[:-1] + '\n')
+                print(row[:-1])
+                row = ""
+            row += '('+str(t[0][0])+'-'+str(t[0][1])+')' + ',' + str(t[1]) + ',' """
     for i, _ in enumerate(frequencies):
         val = max(arcs[i], key = arcs[i].get)
-        frequencies[i] = arcs[i][val]/CAP
+        frequencies[i] = arcs[i][val]/capacities[i]
         #print(f"Maximum flow: {frequencies[i]*CAP} in {val}")
 
-def assign(routes, frequencies):
+def assign(routes, stops, frequencies, capacities):
     print("\n")
     D_NS = 0
     D_0 = 0
@@ -235,8 +252,8 @@ def assign(routes, frequencies):
         D_0, D_1, D_2, D_NS = 0, 0, 0, 0
         for i in range(len(demand_matrix)):
             for j in range(len(demand_matrix)):
-                Ri = [e for (e, x) in enumerate(routes) if i in x]
-                Rj = [e for (e, x) in enumerate(routes) if j in x]
+                Ri = [e for (e, x) in enumerate(stops) if i in x]
+                Rj = [e for (e, x) in enumerate(stops) if j in x]
                 if not Ri or not Rj:
                     D_NS += demand_matrix[i][j]/TOTAL_DEMAND
                 else:
@@ -261,7 +278,7 @@ def assign(routes, frequencies):
                         total_trt += trt*demand_matrix[i][j]
                     else:
                         D_NS += demand_matrix[i][j]/TOTAL_DEMAND
-        update_frequencies(output_freq, arcs)
+        update_frequencies(output_freq, arcs, capacities)
         if frequency_deviation(input_freq, output_freq) < DELTA_F:
             break
         iterations += 1
@@ -279,7 +296,14 @@ def assign(routes, frequencies):
 
 #assign([[10,12,13,9,7,14,5,2,1,0],[6,14,5,3,4],[11,3,5,14,8]], [10, 10, 10])
 ts = datetime.datetime.now()
-assign([[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]], [10,10,10,10])
+#assign([[0,1,2,5,7,9,10,12], [4,3,5,7,14,6], [11,3,5,14,8],[9,13,12]], [10,10,10,10])
+#assign([[43, 44, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2],[2, 1, 0, 23, 22, 21, 20, 19, 18, 17, 16, 45, 27, 26, 25, 24, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 28], [30, 31, 29, 34]], [300, 100, 100])
+routes = load_file(ROUTES_FILE)
+stops = load_file(STOPS_FILE)
+capacities = load_file(CAPACITIES_FILE)
+frequencies = load_file(FREQUENCIES_FILE)
+print(routes)
+assign(routes, stops, frequencies, capacities)
 te = datetime.datetime.now()
 print(te - ts)
 #assign([[9,13,12]], [10])
